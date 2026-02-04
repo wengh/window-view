@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Viewer, Entity, ScreenSpaceEventHandler, ScreenSpaceEvent } from 'resium';
-import { Cartesian3, Color, Viewer as CesiumViewer, Math as CesiumMath, createGooglePhotorealistic3DTileset, ScreenSpaceEventType, PerspectiveFrustum, Matrix3, Cartesian2 } from 'cesium';
+import { Cartesian3, Color, Viewer as CesiumViewer, Math as CesiumMath, createGooglePhotorealistic3DTileset, ScreenSpaceEventType, PerspectiveFrustum, Matrix3, Cartesian2, Plane, ClippingPlane, ClippingPlaneCollection } from 'cesium';
 import * as Cesium from 'cesium';
 import { calculateSurfaceNormal, type WindowSelection } from '../logic/WindowSelector';
 import { FPController } from '../logic/FPController';
@@ -50,6 +50,43 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
       loadTiles();
     }
   }, [googleMapsApiKey]);
+
+  // Manage Clipping Plane for Inside View to prevent building occlusion/culling
+  useEffect(() => {
+    if (!tileset) return;
+
+    if (isInsideView && viewWindow) {
+        const { center, normal } = viewWindow;
+        // Clip everything explicitly BEHIND the window surface (the interior).
+        // Clipping matches positive side of normal.
+        // Clip based on user feedback (likely needing 'normal' directly)
+        const clipNormal = normal; // Points OUTWARD? Warning: might clip world if Cesium clips in direction of normal.
+        // If previous (NEGATE) was wrong, then this must be right.
+        Cartesian3.normalize(clipNormal, clipNormal);
+        const plane = Plane.fromPointNormal(center, clipNormal);
+        plane.distance -= 0.2; // Offset outward by 0.2m to avoid z-fighting
+
+        const clippingPlane = new ClippingPlane(clipNormal, plane.distance);
+
+        if (tileset.clippingPlanes) {
+            tileset.clippingPlanes.removeAll();
+            tileset.clippingPlanes.add(clippingPlane);
+            tileset.clippingPlanes.enabled = true;
+        } else {
+            tileset.clippingPlanes = new ClippingPlaneCollection({
+                planes: [clippingPlane],
+                edgeWidth: 0.0,
+                enabled: true
+            });
+        }
+    } else {
+        // Disable clipping safely instead of removing to avoid shader crash
+        if (tileset.clippingPlanes) {
+            tileset.clippingPlanes.enabled = false;
+        }
+    }
+  }, [isInsideView, tileset, viewWindow]);
+
 
   useEffect(() => {
     if (viewer && tileset) {
@@ -244,6 +281,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
             ssc.enableZoom = true;
             ssc.enableTilt = true;
             ssc.enableLook = true;
+            ssc.enableCollisionDetection = true; // IMPORTANT: Restore collision to prevent underground crashes
 
             const frustum = viewer.camera.frustum as PerspectiveFrustum;
             if (frustum.fov) frustum.fov = CesiumMath.toRadians(60);

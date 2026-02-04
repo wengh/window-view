@@ -79,10 +79,11 @@ export const calculateSurfaceNormal = (
   const globeUp = Cartesian3.normalize(pCenter, new Cartesian3());
   const normalDotUp = Cartesian3.dot(normal, globeUp);
   normal = Cartesian3.subtract(
-      normal,
-      Cartesian3.multiplyByScalar(globeUp, normalDotUp, new Cartesian3()),
-      normal
-  );
+          normal,
+          Cartesian3.multiplyByScalar(globeUp, normalDotUp, new Cartesian3()),
+          normal
+      );
+  normal = Cartesian3.normalize(normal, normal); // Re-normalize after projection
   if (Cartesian3.magnitude(normal) < 1e-6) {
       console.warn("Normal became zero after horizontal projection");
       return null;

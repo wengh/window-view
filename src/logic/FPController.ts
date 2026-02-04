@@ -115,7 +115,7 @@ export class FPController {
       if (frustum.fov !== undefined) {
           const currentFov = frustum.fov;
           const sensitivity = 0.001;
-          let newFov = currentFov + delta * sensitivity;
+          let newFov = currentFov - delta * sensitivity;
           newFov = Math.max(CesiumMath.toRadians(10), Math.min(CesiumMath.toRadians(120), newFov));
           frustum.fov = newFov;
       }
