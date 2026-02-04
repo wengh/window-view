@@ -285,6 +285,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
 
             const frustum = viewer.camera.frustum as PerspectiveFrustum;
             if (frustum.fov) frustum.fov = CesiumMath.toRadians(60);
+            if (frustum.near !== undefined) frustum.near = 1.0; // Restore default near plane to prevent frustum crashes
       }
   }, [isInsideView, viewWindow, viewer, initialCamera]);
 
