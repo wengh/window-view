@@ -213,6 +213,17 @@ function App() {
                    <button onClick={handleExitView}>Exit View</button>
                </div>
           )}
+
+          <div style={{ marginTop: 20, fontSize: 12, opacity: 0.7 }}>
+              <a
+                href="https://github.com/wengh/window-view"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#fff' }}
+              >
+                  GitHub
+              </a>
+          </div>
       </div>
     </div>
   );
