@@ -59,7 +59,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
         viewer.scene.globe.showGroundAtmosphere = false; // Disable ground atmosphere which can hide sky
         viewer.scene.globe.enableLighting = false; // Disable lighting that might cause dark sky
 
-        if (viewer.camera.positionCartographic.height > 10000000) {
+        if (viewer.camera.positionCartographic.height > 10000000 && !initialCamera) {
              viewer.camera.flyTo({
                 destination: Cartesian3.fromDegrees(-74.0060, 40.7128, 500),
                 orientation: {
@@ -75,7 +75,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
              viewer.scene.primitives.remove(tileset);
         }
     }
-  }, [tileset, viewer]);
+  }, [tileset, viewer, initialCamera]);
 
   const handleLeftClick = (movement: any) => {
     if (!selectionMode || !viewer || isInsideView) return;
@@ -178,8 +178,9 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
           let destination: Cartesian3;
           let orientation: any;
 
+
           if (initialCamera && !initialRestoredRef.current) {
-              console.log("Restoring Initial Camera (Inside)");
+              console.log("Restoring Initial Camera (Inside)", initialCamera);
               // Instant restore
               viewer.camera.setView({
                   destination: new Cartesian3(initialCamera.x, initialCamera.y, initialCamera.z),
@@ -226,7 +227,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
               });
           }
       } else if (!isInsideView) {
-
+            // ... (rest of outside logic) ...
             controller.setEnabled(false);
 
             // Restore functionality
@@ -247,7 +248,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
             const frustum = viewer.camera.frustum as PerspectiveFrustum;
             if (frustum.fov) frustum.fov = CesiumMath.toRadians(60);
       }
-  }, [isInsideView, viewWindow, viewer]);
+  }, [isInsideView, viewWindow, viewer, initialCamera]);
 
   // Restore Camera logic for OUTSIDE mode
   useEffect(() => {
