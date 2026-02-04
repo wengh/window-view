@@ -180,37 +180,22 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
 
           if (initialCamera && !initialRestoredRef.current) {
               console.log("Restoring Initial Camera (Inside)");
-              destination = new Cartesian3(initialCamera.x, initialCamera.y, initialCamera.z);
-              orientation = {
-                  heading: initialCamera.h,
-                  pitch: initialCamera.p,
-                  roll: initialCamera.r
-              };
+              // Instant restore
+              viewer.camera.setView({
+                  destination: new Cartesian3(initialCamera.x, initialCamera.y, initialCamera.z),
+                  orientation: {
+                      heading: initialCamera.h,
+                      pitch: initialCamera.p,
+                      roll: initialCamera.r
+                  }
+              });
               initialRestoredRef.current = true;
           } else {
               console.log("Entering Window View (Standard)");
               const { center, normal, height } = viewWindow;
-              const offset = 2.5; // Further back to avoid occlusion
-
-              // Eye level: 1.6m above floor.
-              // Floor is 0.2m below window bottom.
-              // Window Bottom is Center - H/2.
-              // Floor Level = Center - H/2 - 0.2.
-              // Eye Level = Floor Level + 1.6 = Center - H/2 - 0.2 + 1.6 = Center + (1.4 - H/2).
+              const offset = 2.5;
               const eyeOffset = 1.4 - (height / 2);
-
-              // Calculate Local Up vector from rotation roughly (or assume it's roughly Z/Up)
-              // Actually we have 'orientation' which gives us direction frames.
-              // But here we need to construct the position.
-              // We can rely on just using World Up (Z=1) if the window is vertical?
-              // Better to use the window's Up vector if possible.
-              // But we only have Center and Normal easily here.
-              // Wait, 'viewWindow' logic computes Up from Normal and WorldUp.
-              // Let's re-derive Up quickly or assume Z and project.
-              // Actually, we can assume standard vertical windows.
-              const upVector = new Cartesian3(0,0,1); // Simple approximation for usually vertical windows
-              // Or better, derive it properly?
-              // The 'up' in orientation object below is used for camera Up.
+              const upVector = new Cartesian3(0,0,1);
 
               destination = Cartesian3.add(
                   Cartesian3.subtract(
@@ -222,25 +207,26 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
                   new Cartesian3()
               );
               orientation = { direction: normal, up: upVector };
+
+              // Animation for entering view
+              viewer.camera.flyTo({
+                 destination: destination,
+                 orientation: orientation,
+                 duration: 1.5,
+                 complete: () => {
+                     // Reset roll to 0 after flyTo completes
+                     viewer.camera.setView({
+                         orientation: {
+                             heading: viewer.camera.heading,
+                             pitch: viewer.camera.pitch,
+                             roll: 0
+                         }
+                     });
+                 }
+              });
           }
-
-          viewer.camera.flyTo({
-             destination: destination,
-             orientation: orientation,
-             duration: 1.5,
-             complete: () => {
-                 // Reset roll to 0 after flyTo completes
-                 viewer.camera.setView({
-                     orientation: {
-                         heading: viewer.camera.heading,
-                         pitch: viewer.camera.pitch,
-                         roll: 0
-                     }
-                 });
-             }
-         });
-
       } else if (!isInsideView) {
+
             controller.setEnabled(false);
 
             // Restore functionality
