@@ -124,7 +124,7 @@ You can bookmark or share URLs to return to the exact same view later.
      ```
 
    - **Option B: Runtime Entry**
-     The app will prompt you for the API key on first load. It's saved to `localStorage` for future sessions.
+     The app will prompt you for the API key on first load. It's saved locally to your browser's `localStorage` for future sessions and is never transmitted to any third-party server.
 
 4. **Run the development server**
    ```bash

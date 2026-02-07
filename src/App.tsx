@@ -148,6 +148,10 @@ function App() {
                       </p>
                   </div>
 
+                  <p style={{ color: '#aaa', fontSize: '0.8em', fontStyle: 'italic', marginBottom: '15px' }}>
+                      Privacy Note: Your API key is stored locally in your browser and is only sent to Google Servers to fetch 3D tiles. It is never sent to any other server.
+                  </p>
+
                   <input
                     value={tempApiKey}
                     onChange={(e) => setTempApiKey(e.target.value)}
