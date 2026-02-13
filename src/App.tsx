@@ -271,7 +271,7 @@ function App() {
                         <div><span style={{ color: '#FFA500', fontWeight: 'bold' }}>━━</span> Solstice (6/21, 12/21)</div>
                         <div><span style={{ color: '#FFD700' }}>━━</span> Date arcs</div>
                         <div><span style={{ color: '#fff' }}>━━</span> Hour cross-lines</div>
-                        <div><span style={{ color: '#00FFFF' }}>━━</span> DST transitions</div>
+                        <div><span style={{ color: '#FFB6C1' }}>━━</span> DST hours</div>
                       </div>
                     )}
                </div>
