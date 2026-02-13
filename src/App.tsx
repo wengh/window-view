@@ -12,7 +12,7 @@ function App() {
   // Parse URL hash once on initial load
   const initialState = useMemo(() => {
       const hash = window.location.hash.substring(1);
-      if (!hash) return { selection: null, mode: 'navigating' as const, camera: null };
+      if (!hash) return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
 
       try {
           const params = new URLSearchParams(hash);
@@ -32,29 +32,40 @@ function App() {
               };
           }
 
-          let camera: { x:number, y:number, z:number, h:number, p:number, r:number } | null = null;
+          let camera: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null = null;
           if (camData) {
-              const [cx,cy,cz, ch,cp,cr] = camData.split(',').map(parseFloat);
-              camera = { x:cx, y:cy, z:cz, h:ch, p:cp, r:cr };
+              const parts = camData.split(',').map(parseFloat);
+              camera = { x:parts[0], y:parts[1], z:parts[2], h:parts[3], p:parts[4], r:parts[5], fov:parts[6] };
           }
 
           let mode: 'navigating' | 'selecting' | 'viewing' = 'navigating';
           if (modeData === 'viewing') mode = 'viewing';
           else if (modeData === 'selecting') mode = 'selecting';
 
-          return { selection, mode, camera };
+          const showSP = params.get('sp') === '1';
+
+          return { selection, mode, camera, showSunPath: showSP };
       } catch (e) {
           console.error("Failed to parse hash", e);
-          return { selection: null, mode: 'navigating' as const, camera: null };
+          return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
       }
   }, []);
 
   const [selection, setSelection] = useState<WindowSelection | null>(initialState.selection);
   const [mode, setMode] = useState<'navigating' | 'selecting' | 'viewing'>(initialState.mode);
   const [tempApiKey, setTempApiKey] = useState('');
+  const [showSunPath, setShowSunPath] = useState(initialState.showSunPath);
 
-  const [cameraState, setCameraState] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number } | null>(initialState.camera);
-  const initialCameraRef = useRef(initialState.camera);
+  const [cameraState, setCameraState] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null>(initialState.camera);
+
+  // Derived initial cameras for restoration logic
+  const initialOutsideCamera = useMemo(() =>
+    initialState.mode === 'navigating' ? initialState.camera : null
+  , [initialState]);
+
+  const startInsideCamera = useMemo(() =>
+    initialState.mode === 'viewing' ? initialState.camera : null
+  , [initialState]);
 
 
   const restoredRef = useRef(false);
@@ -85,9 +96,14 @@ function App() {
      if (cameraState) {
          const camStr = [
              cameraState.x, cameraState.y, cameraState.z,
-             cameraState.h, cameraState.p, cameraState.r
+             cameraState.h, cameraState.p, cameraState.r,
+             ...(cameraState.fov !== undefined ? [cameraState.fov] : [])
          ].map(v => v.toFixed(3)).join(',');
          params.push(`cam=${camStr}`);
+     }
+
+     if (showSunPath) {
+         params.push('sp=1');
      }
 
      const newHash = params.join('&');
@@ -95,7 +111,7 @@ function App() {
      if (window.location.hash !== '#' + newHash) {
         window.location.replace('#' + newHash);
      }
-  }, [selection, mode, cameraState]);
+  }, [selection, mode, cameraState, showSunPath]);
 
   const handleSetApiKey = () => {
       localStorage.setItem('google_maps_api_key', tempApiKey);
@@ -107,7 +123,7 @@ function App() {
     setMode('selecting');
   };
 
-  const handleCameraChange = useCallback((cam: { x:number, y:number, z:number, h:number, p:number, r:number }) => {
+  const handleCameraChange = useCallback((cam: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number }) => {
       setCameraState(cam);
   }, []);
 
@@ -173,7 +189,9 @@ function App() {
         selectionMode={mode === 'selecting'}
         viewWindow={selection}
         isInsideView={mode === 'viewing'}
-        initialCamera={initialCameraRef.current}
+        initialOutsideCamera={initialOutsideCamera}
+        startInsideCamera={startInsideCamera}
+        showSunPath={showSunPath}
       />
 
       <div className="ui-overlay">
@@ -228,8 +246,34 @@ function App() {
 
           {mode === 'viewing' && (
                <div style={{ marginTop: 20 }}>
-                   <p>WASD to Move<br/>Drag to Look<br/>Scroll for FOV</p>
+                   <p>WASD to Move<br/>Drag to Look<br/>Scroll for FOV<br/>Middle Click to Reset FOV</p>
                    <button onClick={handleExitView}>Exit View</button>
+                   <button
+                     onClick={() => setShowSunPath(v => !v)}
+                     style={{
+                       width: '100%',
+                       marginTop: 8,
+                       background: showSunPath ? '#FF9800' : '#555',
+                     }}
+                   >
+                       {showSunPath ? '☀ Hide Sun Path' : '☀ Show Sun Path'}
+                   </button>
+                    {showSunPath && (
+                      <div style={{
+                        marginTop: 12,
+                        padding: '10px 12px',
+                        background: 'rgba(0,0,0,0.6)',
+                        borderRadius: 6,
+                        fontSize: 13,
+                        lineHeight: '1.8',
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Legend</div>
+                        <div><span style={{ color: '#FFA500', fontWeight: 'bold' }}>━━</span> Solstice (6/21, 12/21)</div>
+                        <div><span style={{ color: '#FFD700' }}>━━</span> Date arcs</div>
+                        <div><span style={{ color: '#fff' }}>━━</span> Hour cross-lines</div>
+                        <div><span style={{ color: '#00FFFF' }}>━━</span> DST transitions</div>
+                      </div>
+                    )}
                </div>
           )}
 

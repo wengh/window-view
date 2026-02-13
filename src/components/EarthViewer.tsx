@@ -1,18 +1,21 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Viewer, Entity, ScreenSpaceEventHandler, ScreenSpaceEvent } from 'resium';
-import { Cartesian3, Color, Viewer as CesiumViewer, Math as CesiumMath, createGooglePhotorealistic3DTileset, ScreenSpaceEventType, PerspectiveFrustum, Matrix3, Cartesian2, Plane, ClippingPlane, ClippingPlaneCollection } from 'cesium';
+import { Cartesian3, Color, Viewer as CesiumViewer, Math as CesiumMath, createGooglePhotorealistic3DTileset, ScreenSpaceEventType, PerspectiveFrustum, Matrix3, Cartesian2, Plane, ClippingPlane, ClippingPlaneCollection, Cartographic } from 'cesium';
 import * as Cesium from 'cesium';
 import { calculateSurfaceNormal, type WindowSelection } from '../logic/WindowSelector';
 import { FPController } from '../logic/FPController';
+import { useSunPathPrimitives } from './SunPathOverlay';
 
 interface EarthViewerProps {
   googleMapsApiKey: string;
   onWindowSelected: (selection: WindowSelection) => void;
-  onCameraChange?: (cam: { x:number, y:number, z:number, h:number, p:number, r:number }) => void;
+  onCameraChange?: (cam: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number }) => void;
   selectionMode: boolean;
   viewWindow: WindowSelection | null;
   isInsideView: boolean;
-  initialCamera?: { x:number, y:number, z:number, h:number, p:number, r:number } | null;
+  initialOutsideCamera?: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null;
+  startInsideCamera?: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null;
+  showSunPath?: boolean;
 }
 
 export const EarthViewer = React.memo<EarthViewerProps>(({
@@ -22,14 +25,17 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
   selectionMode,
   viewWindow,
   isInsideView,
-  initialCamera
+  initialOutsideCamera,
+  startInsideCamera,
+  showSunPath = false,
 }) => {
   const [viewer, setViewer] = useState<CesiumViewer | null>(null);
   const [tileset, setTileset] = useState<any>(null);
   const fpControllerRef = useRef<FPController | null>(null);
   const draggingRef = useRef(false);
   const lastCameraUpdateRef = useRef(0);
-  const initialRestoredRef = useRef(false);
+  const outsideRestoredRef = useRef(false); // Tracks if we restored outside camera
+  const insideRestoredRef = useRef(false);  // Tracks if we restored inside camera from URL
 
   const viewerCallback = useCallback((ref: any) => {
       if (ref && ref.cesiumElement) {
@@ -96,7 +102,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
         viewer.scene.globe.showGroundAtmosphere = false; // Disable ground atmosphere which can hide sky
         viewer.scene.globe.enableLighting = false; // Disable lighting that might cause dark sky
 
-        if (viewer.camera.positionCartographic.height > 10000000 && !initialCamera) {
+        if (viewer.camera.positionCartographic.height > 10000000 && !initialOutsideCamera && !startInsideCamera) {
              viewer.camera.flyTo({
                 destination: Cartesian3.fromDegrees(-74.0060, 40.7128, 500),
                 orientation: {
@@ -112,7 +118,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
              viewer.scene.primitives.remove(tileset);
         }
     }
-  }, [tileset, viewer, initialCamera]);
+  }, [tileset, viewer, initialOutsideCamera, startInsideCamera]);
 
   const handleLeftClick = (movement: any) => {
     if (!selectionMode || !viewer || isInsideView) return;
@@ -158,7 +164,8 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
 
                 onCameraChange({
                     x: pos.x, y: pos.y, z: pos.z,
-                    h, p, r
+                    h, p, r,
+                    fov: (viewer.camera.frustum as PerspectiveFrustum).fov,
                 });
                 lastCameraUpdateRef.current = now;
             }
@@ -216,18 +223,22 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
           let orientation: any;
 
 
-          if (initialCamera && !initialRestoredRef.current) {
-              console.log("Restoring Initial Camera (Inside)", initialCamera);
+          if (startInsideCamera && !insideRestoredRef.current) {
+              console.log("Restoring Initial Camera (Inside)", startInsideCamera);
               // Instant restore
               viewer.camera.setView({
-                  destination: new Cartesian3(initialCamera.x, initialCamera.y, initialCamera.z),
+                  destination: new Cartesian3(startInsideCamera.x, startInsideCamera.y, startInsideCamera.z),
                   orientation: {
-                      heading: initialCamera.h,
-                      pitch: initialCamera.p,
-                      roll: initialCamera.r
+                      heading: startInsideCamera.h,
+                      pitch: startInsideCamera.p,
+                      roll: startInsideCamera.r
                   }
               });
-              initialRestoredRef.current = true;
+              // Restore FOV
+              const frustum = viewer.camera.frustum as PerspectiveFrustum;
+              if (frustum.fov) frustum.fov = startInsideCamera.fov ?? CesiumMath.toRadians(60);
+
+              insideRestoredRef.current = true;
           } else {
               console.log("Entering Window View (Standard)");
               const { center, normal, height } = viewWindow;
@@ -246,7 +257,10 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
               );
               orientation = { direction: normal, up: upVector };
 
-              // Animation for entering view
+              // Animation for entering view with default FOV
+              const frustum = viewer.camera.frustum as PerspectiveFrustum;
+              if (frustum.fov) frustum.fov = CesiumMath.toRadians(60);
+
               viewer.camera.flyTo({
                  destination: destination,
                  orientation: orientation,
@@ -284,26 +298,30 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
             ssc.enableCollisionDetection = true; // IMPORTANT: Restore collision to prevent underground crashes
 
             const frustum = viewer.camera.frustum as PerspectiveFrustum;
-            if (frustum.fov) frustum.fov = CesiumMath.toRadians(60);
+            if (frustum.fov) {
+              frustum.fov = initialOutsideCamera?.fov && !isNaN(initialOutsideCamera.fov)
+                ? initialOutsideCamera.fov
+                : CesiumMath.toRadians(60);
+            }
             if (frustum.near !== undefined) frustum.near = 1.0; // Restore default near plane to prevent frustum crashes
       }
-  }, [isInsideView, viewWindow, viewer, initialCamera]);
+  }, [isInsideView, viewWindow, viewer, initialOutsideCamera, startInsideCamera]);
 
   // Restore Camera logic for OUTSIDE mode
   useEffect(() => {
-      if (viewer && initialCamera && !isInsideView && !initialRestoredRef.current) {
+      if (viewer && initialOutsideCamera && !isInsideView && !outsideRestoredRef.current) {
           console.log("Restoring Initial Camera (Outside)...");
           viewer.camera.setView({
-              destination: new Cartesian3(initialCamera.x, initialCamera.y, initialCamera.z),
+              destination: new Cartesian3(initialOutsideCamera.x, initialOutsideCamera.y, initialOutsideCamera.z),
               orientation: {
-                  heading: initialCamera.h,
-                  pitch: initialCamera.p,
-                  roll: initialCamera.r
+                  heading: initialOutsideCamera.h,
+                  pitch: initialOutsideCamera.p,
+                  roll: initialOutsideCamera.r
               }
           });
-          initialRestoredRef.current = true;
+          outsideRestoredRef.current = true;
       }
-  }, [viewer, initialCamera, isInsideView]);
+  }, [viewer, initialOutsideCamera, isInsideView]);
 
   // Mouse Look using Cesium's ScreenSpaceEventHandler
   useEffect(() => {
@@ -339,6 +357,16 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
             fpControllerRef.current.handleWheel(delta);
         }
     }, (Cesium as any).ScreenSpaceEventType.WHEEL);
+
+    // MIDDLE_CLICK - reset FOV to 60°
+    handler.setInputAction(() => {
+        if (isInsideView) {
+            const frustum = viewer.camera.frustum as PerspectiveFrustum;
+            if (frustum.fov !== undefined) {
+                frustum.fov = CesiumMath.toRadians(60);
+            }
+        }
+    }, (Cesium as any).ScreenSpaceEventType.MIDDLE_CLICK);
 
     return () => {
         handler.destroy();
@@ -515,6 +543,24 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
     ];
 
   }, [viewWindow]);
+
+  // Sun path overlay — compute lat/lon from window center
+  const sunPathGeo = useMemo(() => {
+    if (!viewWindow) return null;
+    const carto = Cartographic.fromCartesian(viewWindow.center);
+    return {
+      lat: CesiumMath.toDegrees(carto.latitude),
+      lon: CesiumMath.toDegrees(carto.longitude),
+    };
+  }, [viewWindow]);
+
+  useSunPathPrimitives(
+    viewer,
+    viewWindow?.center ?? null,
+    sunPathGeo?.lat ?? 0,
+    sunPathGeo?.lon ?? 0,
+    isInsideView && showSunPath && !!viewWindow
+  );
 
   return (
     <Viewer

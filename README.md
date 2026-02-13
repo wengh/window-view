@@ -12,6 +12,7 @@ A web application that lets you select a window on any building in the world usi
 - **First-Person Controls**: WASD movement and mouse look for natural exploration
 - **State Persistence**: Your window selection, camera position, and mode are saved in the URL hash
 - **Virtual Room**: A procedurally generated room (floor, walls, ceiling) appears behind the window
+- **Sun Path Visualization**: View the sun's annual trajectory with date and time labels directly in the sky
 
 ## Examples
 
@@ -59,6 +60,8 @@ Waterloo:
 | Strafe right | D |
 | Look around | Left-click + drag |
 | Zoom (FOV) | Scroll wheel |
+| Reset FOV | Middle-click |
+| Toggle Sun Path | Click "Show Sun Path" button |
 
 ## Usage Workflow
 
@@ -74,8 +77,9 @@ Waterloo:
 
 The application automatically saves the following to the URL hash:
 - Window selection (position, normal, size)
-- Camera position and orientation
+- Camera position and orientation (including Field of View)
 - Current mode (navigating/selecting/viewing)
+- Sun Path visibility state
 
 You can bookmark or share URLs to return to the exact same view later.
 
