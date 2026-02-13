@@ -205,7 +205,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
           // Prevent skybox from disappearing & Provide Blue Sky:
           // Disable dynamic atmosphere/globe to avoid artifacts.
           // Hide Starry SkyBox and set background to Blue to simulate day sky.
-          if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
+          if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true;
           viewer.scene.globe.show = false;
           if (viewer.scene.skyBox) viewer.scene.skyBox.show = false; // Hide stars
           viewer.scene.backgroundColor = Color.fromCssColorString('#87CEEB'); // Sky Blue
