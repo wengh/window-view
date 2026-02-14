@@ -44,6 +44,10 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 <img width="600" alt="Window View screenshot of E5 bridge" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
 
+### Sun path
+
+<img width="1230" height="2015" alt="image" src="https://github.com/user-attachments/assets/12c8d14d-b837-46d2-aea0-eb165fbf8c14" />
+
 ---
 
 ## How to Use
