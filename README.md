@@ -38,7 +38,7 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 ### Waterloo — E5 Bridge
 
-[**→ Open in Window View**](https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.916,-4573192.487,4365933.415,5.281,-0.038,6.283)
+[**→ Open in Window View**](https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.048,-4573190.589,4365935.554,5.464,-0.075,6.283,1.994)
 
 <img width="600" alt="Simulated view from E5 bridge, Waterloo, depicting railway tracks and surrounding vegetation" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
 
