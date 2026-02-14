@@ -144,31 +144,121 @@ export const EarthViewer = React.memo<EarthViewerProps>(
       if (!tileset) return
 
       if (isInsideView && viewWindow) {
-        const { center, normal } = viewWindow
-        // Clip everything explicitly BEHIND the window surface (the interior).
-        // Clipping matches positive side of normal.
-        // Clip based on user feedback (likely needing 'normal' directly)
-        const clipNormal = normal // Points OUTWARD? Warning: might clip world if Cesium clips in direction of normal.
-        // If previous (NEGATE) was wrong, then this must be right.
-        Cartesian3.normalize(clipNormal, clipNormal)
-        const plane = Plane.fromPointNormal(center, clipNormal)
-        plane.distance -= 0.2 // Offset outward by 0.2m to avoid z-fighting
+        const { center, width, height, rotation } = viewWindow
 
-        const clippingPlane = new ClippingPlane(clipNormal, plane.distance)
+        // Calculate basis vectors
+        const rotationMatrix = Matrix3.fromQuaternion(rotation)
+        const right = Matrix3.getColumn(rotationMatrix, 0, new Cartesian3())
+        Cartesian3.normalize(right, right)
+        const up = Matrix3.getColumn(rotationMatrix, 1, new Cartesian3())
+        Cartesian3.normalize(up, up)
+        const forward = Matrix3.getColumn(rotationMatrix, 2, new Cartesian3()) // Window normal
+        Cartesian3.normalize(forward, forward)
+
+        const planes: ClippingPlane[] = []
+
+        // Define Box Dimensions for Clipping (The "Hole")
+        // We want to clip the volume of the room + 3m ahead.
+        // Normals for clipping planes must point INTO the clipped volume (Clipping logic: Positive side is clipped).
+        // Since we want to remove the inside of the box, we define the box interior as the positive side of all planes.
+        // "Intersection Mode" (unionClippingRegions = false) clips the intersection of positive regions.
+
+        // Box Z range: +3m (Ahead) to -10m (Behind/Room Depth)
+        // Box X range: +/- width/2
+        // Box Y range: +height/2 to -height/2 - 0.2
+
+        // 1. Front Plane (+3m ahead)
+        // Point: center + 3 * forward
+        // Normal: -forward (pointing IN towards room center)
+        const frontDist = 3.0
+        const frontPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(forward, frontDist, new Cartesian3()),
+          new Cartesian3()
+        )
+        const frontNormal = Cartesian3.negate(forward, new Cartesian3())
+        // Plane.distance is -Normal.Point.
+        // ClippingPlane matches this definition relative to origin.
+        const frontPlane = Plane.fromPointNormal(frontPoint, frontNormal)
+        planes.push(new ClippingPlane(frontNormal, frontPlane.distance))
+
+        // 2. Back Plane (-10m behind)
+        // Point: center - 10 * forward
+        // Normal: forward (pointing IN towards room center)
+        const backDist = 10.0
+        const backPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(forward, -backDist, new Cartesian3()),
+          new Cartesian3()
+        )
+        const backNormal = forward
+        const backPlane = Plane.fromPointNormal(backPoint, backNormal)
+        planes.push(new ClippingPlane(backNormal, backPlane.distance))
+
+        // 3. Right Plane (+width/2)
+        // Point: center + width/2 * right
+        // Normal: -right
+        const rightPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(right, width / 2, new Cartesian3()),
+          new Cartesian3()
+        )
+        const rightNormal = Cartesian3.negate(right, new Cartesian3())
+        const rightPlane = Plane.fromPointNormal(rightPoint, rightNormal)
+        planes.push(new ClippingPlane(rightNormal, rightPlane.distance))
+
+        // 4. Left Plane (-width/2)
+        // Point: center - width/2 * right
+        // Normal: right
+        const leftPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(right, -width / 2, new Cartesian3()),
+          new Cartesian3()
+        )
+        const leftNormal = right
+        const leftPlane = Plane.fromPointNormal(leftPoint, leftNormal)
+        planes.push(new ClippingPlane(leftNormal, leftPlane.distance))
+
+        // 5. Top Plane (+height/2)
+        // Point: center + height/2 * up
+        // Normal: -up
+        const topPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(up, height / 2, new Cartesian3()),
+          new Cartesian3()
+        )
+        const topNormal = Cartesian3.negate(up, new Cartesian3())
+        const topPlane = Plane.fromPointNormal(topPoint, topNormal)
+        planes.push(new ClippingPlane(topNormal, topPlane.distance))
+
+        // 6. Bottom Plane (-height/2 - 0.2)
+        // Point: center - (height/2 + 0.2) * up
+        // Normal: up
+        const floorDrop = 0.2
+        const bottomPoint = Cartesian3.add(
+          center,
+          Cartesian3.multiplyByScalar(up, -height / 2 - floorDrop, new Cartesian3()),
+          new Cartesian3()
+        )
+        const bottomNormal = up
+        const bottomPlane = Plane.fromPointNormal(bottomPoint, bottomNormal)
+        planes.push(new ClippingPlane(bottomNormal, bottomPlane.distance))
 
         if (tileset.clippingPlanes) {
           tileset.clippingPlanes.removeAll()
-          tileset.clippingPlanes.add(clippingPlane)
+          planes.forEach((p) => tileset.clippingPlanes.add(p))
+          tileset.clippingPlanes.unionClippingRegions = false
           tileset.clippingPlanes.enabled = true
         } else {
           tileset.clippingPlanes = new ClippingPlaneCollection({
-            planes: [clippingPlane],
+            planes: planes,
             edgeWidth: 0.0,
+            unionClippingRegions: false,
             enabled: true,
           })
         }
       } else {
-        // Disable clipping safely instead of removing to avoid shader crash
+        // Disable clipping safely
         if (tileset.clippingPlanes) {
           tileset.clippingPlanes.enabled = false
         }
@@ -176,14 +266,8 @@ export const EarthViewer = React.memo<EarthViewerProps>(
     }, [isInsideView, tileset, viewWindow])
 
     useEffect(() => {
-      if (viewer && tileset) {
-        if (!viewer.scene.primitives.contains(tileset)) {
-          viewer.scene.primitives.add(tileset)
-        }
-
-        // CRITICAL: Prevent skybox from disappearing
-        viewer.scene.globe.showGroundAtmosphere = false // Disable ground atmosphere which can hide sky
-        viewer.scene.globe.enableLighting = false // Disable lighting that might cause dark sky
+      if (viewer && tileset && !viewer.scene.primitives.contains(tileset)) {
+        viewer.scene.primitives.add(tileset)
       }
       return () => {
         if (viewer && tileset) {
@@ -294,6 +378,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(
 
       if (isInsideView && viewWindow) {
         controller.setEnabled(true)
+        lastAppliedOutsideCamRef.current = null // Reset outside cam so it restores correctly next time
 
         // Granularly disable default inputs to prevent fighting
         const ssc = viewer.scene.screenSpaceCameraController
@@ -358,6 +443,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(
       } else if (!isInsideView) {
         // ... (rest of outside logic) ...
         controller.setEnabled(false)
+        lastAppliedInsideCamRef.current = null // Reset inside cam so it restores correctly next time
 
         // Restore functionality
         viewer.scene.globe.show = true
