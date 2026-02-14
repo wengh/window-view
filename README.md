@@ -125,6 +125,10 @@ npm install
 npm run dev
 ```
 
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
 Then open `http://localhost:5173`. You can optionally create a `.env` file with your API key so you don't have to enter it each time:
 
 ```

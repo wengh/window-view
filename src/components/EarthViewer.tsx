@@ -346,16 +346,6 @@ export const EarthViewer = React.memo<EarthViewerProps>(
             destination: destination,
             orientation: orientation,
             duration: 1.5,
-            complete: () => {
-              // Ensure 0 roll
-              viewer.camera.setView({
-                orientation: {
-                  heading: viewer.camera.heading,
-                  pitch: viewer.camera.pitch,
-                  roll: 0.0,
-                },
-              })
-            },
           })
         }
       } else if (!isInsideView) {
@@ -398,15 +388,6 @@ export const EarthViewer = React.memo<EarthViewerProps>(
             destination: targetPos,
             orientation: orientation,
             duration: 1.5,
-            complete: () => {
-              viewer.camera.setView({
-                orientation: {
-                  heading: viewer.camera.heading,
-                  pitch: viewer.camera.pitch,
-                  roll: 0.0,
-                },
-              })
-            },
           })
         }
       }
