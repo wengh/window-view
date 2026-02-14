@@ -64,11 +64,11 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 #### Globe Navigation (default)
 
-| Action      | Control                                                   |
-| ----------- | --------------------------------------------------------- |
-| Pan view    | Left click + drag                                         |
-| Zoom view   | Mouse wheel scroll                                        |
-| Rotate view | Right click + drag                                        |
+| Action      | Control            |
+| ----------- | ------------------ |
+| Pan view    | Left click + drag  |
+| Zoom view   | Mouse wheel scroll |
+| Rotate view | Right click + drag |
 
 #### Selecting a Window
 
