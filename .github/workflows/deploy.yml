@@ -30,6 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check Token
+        env:
+          VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN }}
+        run: |
+          if [ -z "$VITE_CESIUM_ION_TOKEN" ]; then
+            echo "::error::VITE_CESIUM_ION_TOKEN is not set"
+            exit 1
+          fi
+
       - name: Build
         env:
           VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN }}
