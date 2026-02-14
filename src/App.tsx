@@ -239,7 +239,7 @@ function App() {
                     style={{ marginTop: 10, width: '100%', background: '#4CAF50' }}
                     onClick={handleEnterView}
                   >
-                      View Outside (Go Inside)
+                      View From Window
                   </button>
               </div>
           )}
