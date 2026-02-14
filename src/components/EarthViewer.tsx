@@ -626,15 +626,16 @@ export const EarthViewer = React.memo<EarthViewerProps>(
       handler.setInputAction(
         (movement: any) => {
           if (isInsideView && fpControllerRef.current) {
-            // Cesium PINCH_MOVE event provides distance properties as numbers (distance between fingers)
-            // movement.distance.startPosition = distance at start of this frame's move
-            // movement.distance.endPosition = distance at end of this frame's move
-            const p1 = movement.distance.startPosition
-            const p2 = movement.distance.endPosition
+            // Cesium PINCH_MOVE event provides "distance" as Cartesian2, but the distance value is stored in .y
+            // (Cesium quirk: uses Cartesian2 for uniformity, but Pinch distance is 1D)
+            const p1 = movement.distance.startPosition.y
+            const p2 = movement.distance.endPosition.y
             const diff = p2 - p1 // positive = spreading = zoom in
 
-            // If spreading (diff > 0), we want to zoom IN (decrease FOV).
-            fpControllerRef.current.handlePinch(diff * 5.0) // multiplier for sensitivity
+            // Guard against NaN just in case
+            if (!isNaN(diff)) {
+              fpControllerRef.current.handlePinch(diff * 5.0) // multiplier for sensitivity
+            }
           }
         },
         (Cesium as any).ScreenSpaceEventType.PINCH_MOVE
