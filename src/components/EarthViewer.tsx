@@ -6,6 +6,28 @@ import { calculateSurfaceNormal, type WindowSelection } from '../logic/WindowSel
 import { FPController } from '../logic/FPController';
 import { useSunPathPrimitives } from './SunPathOverlay';
 
+const getOrientationFromDirection = (position: Cartesian3, direction: Cartesian3) => {
+    const transform = Cesium.Transforms.eastNorthUpToFixedFrame(position);
+    const rotation = new Cesium.Matrix3();
+    Cesium.Matrix4.getMatrix3(transform, rotation);
+    const east = new Cartesian3();
+    const north = new Cartesian3();
+    const up = new Cartesian3();
+
+    Cesium.Matrix3.getColumn(rotation, 0, east);
+    Cesium.Matrix3.getColumn(rotation, 1, north);
+    Cesium.Matrix3.getColumn(rotation, 2, up);
+
+    const x = Cartesian3.dot(direction, east);
+    const y = Cartesian3.dot(direction, north);
+    const z = Cartesian3.dot(direction, up);
+
+    const heading = Math.atan2(x, y);
+    const pitch = Math.asin(CesiumMath.clamp(z, -1.0, 1.0));
+
+    return { heading, pitch, roll: 0.0 };
+};
+
 interface EarthViewerProps {
   googleMapsApiKey: string;
   onWindowSelected: (selection: WindowSelection) => void;
@@ -36,13 +58,20 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
   const lastCameraUpdateRef = useRef(0);
   const lastAppliedOutsideCamRef = useRef<any>(null);
   const lastAppliedInsideCamRef = useRef<any>(null);
-
+  const wasInsideViewRef = useRef(isInsideView);
+  const suppressRestoreRef = useRef(false);
 
   const isCloseTo = (target: {x:number, y:number, z:number, h:number, p:number, r:number, fov?:number}, current: any) => {
        const pos = current.position;
        const dist = Cartesian3.distance(new Cartesian3(target.x, target.y, target.z), pos);
        const angDist = Math.abs(target.h - current.heading) + Math.abs(target.p - current.pitch) + Math.abs(target.r - current.roll);
-       return dist < 2.0 && angDist < 0.1;
+
+       let fovDist = 0;
+       if (target.fov !== undefined && current.frustum && current.frustum.fov !== undefined) {
+           fovDist = Math.abs(target.fov - current.frustum.fov);
+       }
+
+       return dist < 2.0 && angDist < 0.1 && fovDist < 0.01;
   };
 
   const viewerCallback = useCallback((ref: any) => {
@@ -259,7 +288,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
                   Cartesian3.multiplyByScalar(upVector, eyeOffset, new Cartesian3()),
                   new Cartesian3()
               );
-              orientation = { direction: normal, up: upVector };
+              orientation = getOrientationFromDirection(destination, normal);
 
               // Animation for entering view with default FOV
               const frustum = viewer.camera.frustum as PerspectiveFrustum;
@@ -270,12 +299,12 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
                  orientation: orientation,
                  duration: 1.5,
                  complete: () => {
-                     // Reset roll to 0 after flyTo completes
+                     // Ensure 0 roll
                      viewer.camera.setView({
                          orientation: {
                              heading: viewer.camera.heading,
                              pitch: viewer.camera.pitch,
-                             roll: 0
+                             roll: 0.0
                          }
                      });
                  }
@@ -304,13 +333,50 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
                 : CesiumMath.toRadians(60);
             }
             if (frustum.near !== undefined) frustum.near = 1.0; // Restore default near plane to prevent frustum crashes
+
+            // Face window from ouside if we just exited
+            if (wasInsideViewRef.current && viewWindow) {
+                 console.log("Exiting to 10m view facing window");
+                 suppressRestoreRef.current = true; // Block standard restore
+
+                 const { center, normal } = viewWindow;
+                 const targetPos = Cartesian3.add(
+                     center,
+                     Cartesian3.multiplyByScalar(normal, 20, new Cartesian3()),
+                     new Cartesian3()
+                 );
+                 const direction = Cartesian3.negate(normal, new Cartesian3());
+                 const orientation = getOrientationFromDirection(targetPos, direction);
+
+                 viewer.camera.flyTo({
+                     destination: targetPos,
+                     orientation: orientation,
+                     duration: 1.5,
+                     complete: () => {
+                         viewer.camera.setView({
+                             orientation: {
+                                 heading: viewer.camera.heading,
+                                 pitch: viewer.camera.pitch,
+                                 roll: 0.0
+                             }
+                         });
+                     }
+                 });
+            }
       }
+      wasInsideViewRef.current = isInsideView;
   }, [isInsideView, viewWindow, viewer, initialOutsideCamera, startInsideCamera]);
 
   // Restore Camera logic for OUTSIDE mode
   // Effect to apply Outside Camera from prop
   useEffect(() => {
       if (viewer && initialOutsideCamera && !isInsideView) {
+          if (suppressRestoreRef.current) {
+              suppressRestoreRef.current = false;
+              lastAppliedOutsideCamRef.current = initialOutsideCamera;
+              return;
+          }
+
           if (lastAppliedOutsideCamRef.current !== initialOutsideCamera) {
                if (!isCloseTo(initialOutsideCamera, viewer.camera)) {
                    console.log("Restoring Initial Camera (Outside) from prop");

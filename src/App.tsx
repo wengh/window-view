@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EarthViewer } from './components/EarthViewer';
 import './App.css';
 import type { WindowSelection } from './logic/WindowSelector';
