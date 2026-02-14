@@ -227,6 +227,53 @@ function App() {
     }
   }
 
+  if (!Ion.defaultAccessToken) {
+    return (
+      <div className="api-key-modal">
+        <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'left' }}>
+          <h2 style={{ textAlign: 'center' }}>Cesium Ion Token Required</h2>
+
+          <div style={{ fontSize: '0.9em', marginBottom: '15px', lineHeight: '1.4' }}>
+            <p>
+              To use this 3D Viewer, you need to provide a <strong>Cesium Ion Token</strong>.
+            </p>
+            <p>
+              Please add your token to the <code>.env</code> file in the project root:
+            </p>
+            <pre
+              style={{
+                background: '#333',
+                padding: '10px',
+                borderRadius: '4px',
+                overflowX: 'auto',
+              }}
+            >
+              VITE_CESIUM_ION_TOKEN=your_token_here
+            </pre>
+            <p>
+              You can get a free token from{' '}
+              <a
+                href="https://ion.cesium.com/tokens"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#646cff' }}
+              >
+                ion.cesium.com
+              </a>
+              .
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ width: '100%', padding: '10px', fontWeight: 'bold' }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app-container">
       <EarthViewer
