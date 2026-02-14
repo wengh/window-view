@@ -65,6 +65,19 @@ function App() {
   // External Camera is used to force EarthViewer to update position when it changes from outside (Hash)
   const [externalCamera, setExternalCamera] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null>(initialData.camera);
   const [externalMode, setExternalMode] = useState(initialData.mode);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+
+  const handleCopyLink = () => {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          setCopyFeedback(true);
+          setTimeout(() => setCopyFeedback(false), 2000);
+        })
+        .catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+  };
 
   // Listen for Hash Changes (User Paste / Back Button)
   useEffect(() => {
@@ -303,7 +316,7 @@ function App() {
                </div>
           )}
 
-          <div style={{ marginTop: 20, fontSize: 12, opacity: 0.7 }}>
+          <div style={{ marginTop: 20, fontSize: 12, opacity: 0.7, display: 'flex', gap: '10px', alignItems: 'center' }}>
               <a
                 href="https://github.com/wengh/window-view"
                 target="_blank"
@@ -312,6 +325,23 @@ function App() {
               >
                   GitHub
               </a>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: '#fff',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontSize: 'inherit',
+                    fontWeight: 'normal',
+                }}
+                title="Copy current URL to clipboard"
+              >
+                  {copyFeedback ? 'Copied!' : 'Copy Link'}
+              </button>
           </div>
       </div>
     </div>
