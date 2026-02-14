@@ -26,16 +26,16 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 [**→ Open in Window View**](https://wengh.github.io/window-view/#win=1333828.147,-4654719.573,4137757.221,0.554,0.636,0.537,-0.311,-0.367,-0.877,-0.011,3.500,2.200&mode=navigating&cam=1333871.887,-4654709.297,4137881.935,3.482,-0.659,0.000)
 
-| Window View | Real Life |
-|:-----------:|:---------:|
+|                                                                                                 Window View                                                                                                 |                                                                                                           Real Life                                                                                                           |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | <img width="600" alt="Simulated view from 15 William Street, NYC, showing neighbor skyscrapers and clear blue sky" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" /> | <img width="600" alt="Real photo view from 15 William Street, NYC, illustrating the accuracy of the building assets and perspective" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" /> |
 
 ### Chicago — Wolf Point East, unit [#4103](https://a.peek.us/viewer?token=EF_C6iJ1gK)
 
 [**→ Open in Window View**](https://wengh.github.io/window-view/#win=196103.197,-4751503.996,4236516.016,0.025,-0.665,-0.747,-0.934,-0.019,-0.006,-0.356,3.500,2.500&mode=viewing&cam=196103.311,-4751503.880,4236516.291,3.129,0.595,6.283,2.094&sp=1)
 
-| Window View (+ sun path) | Real Life |
-|:-----------:|:---------:|
+|                                                                                                       Window View (+ sun path)                                                                                                        |                                                                                                          Real Life                                                                                                           |
+| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | <img width="600" alt="Simulated view from Wolf Point East, Chicago, with Sun Path overlay displaying hourly sun positions and seasonal arcs" src="https://github.com/user-attachments/assets/b7f44f8d-75f3-40aa-bf0f-eddb2e01474d" /> | <img width="600" alt="Real interior view from Wolf Point East, Chicago, overlooking the river and cityscape through a large window" src="https://github.com/user-attachments/assets/9ef28cbf-560a-4200-b72f-00c6863d8e25" /> |
 
 ### Waterloo — E5 Bridge
@@ -63,26 +63,29 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 ### Controls Reference
 
 #### Globe Navigation (default)
-| Action | Control |
-|--------|---------|
-| Pan view | Left click + drag |
-| Zoom view | Right click + drag, or<br>Mouse wheel scroll |
+
+| Action      | Control                                                   |
+| ----------- | --------------------------------------------------------- |
+| Pan view    | Left click + drag                                         |
+| Zoom view   | Right click + drag, or<br>Mouse wheel scroll              |
 | Rotate view | Middle click + drag, or<br>CTRL + Left/Right click + drag |
 
 #### Selecting a Window
-| Action | Control |
-|--------|---------|
-| Place window | Left-click on a building surface |
+
+| Action        | Control                           |
+| ------------- | --------------------------------- |
+| Place window  | Left-click on a building surface  |
 | Resize window | Width/Height sliders in the panel |
 
 #### Inside View (first-person)
-| Action | Control |
-|--------|---------|
-| Move | W A S D |
-| Look around | Left-click + drag |
-| Zoom (FOV) | Scroll wheel |
-| Reset zoom | Middle-click |
-| Sun path | Click "Show Sun Path" button |
+
+| Action      | Control                      |
+| ----------- | ---------------------------- |
+| Move        | W A S D                      |
+| Look around | Left-click + drag            |
+| Zoom (FOV)  | Scroll wheel                 |
+| Reset zoom  | Middle-click                 |
+| Sun path    | Click "Show Sun Path" button |
 
 ---
 
