@@ -73,8 +73,6 @@ function styleForLine(line: SunPathLine): { color: Cesium.Color; width: number }
 
 /**
  * Add chevron arrowheads along an hour line to indicate direction of annual progression.
- * Each arrow is two small polyline segments forming a "V" pointing in the travel direction.
- * Computed in ENU 3D space to avoid azimuth/altitude distortion.
  */
 function addArrowheads(
   taggedPoints: Array<{ pt: SunPathPoint; dst: boolean }>,
@@ -86,20 +84,19 @@ function addArrowheads(
 ) {
   if (taggedPoints.length < 4) return;
 
-  // Wing length: 0.5 degrees at DOME_RADIUS
-  const wingLen = DOME_RADIUS * Math.tan(0.5 * Math.PI / 180);
-  const halfAngle = Math.PI / 6; // 30° half-angle for chevron
+  const wingLen = DOME_RADIUS * Math.tan(0.5 * Math.PI / 180); // 0.5 degrees wing
+  const halfAngle = Math.PI / 6; // 30° half-angle
 
   for (let a = 0; a < numArrows; a++) {
     const idx = Math.floor(taggedPoints.length * (a + 0.5) / numArrows);
+    const { pt, dst } = taggedPoints[idx];
+    const color = dst ? dstColor : stdColor;
 
-    const color = taggedPoints[idx].dst ? dstColor : stdColor;
-
-    // Get ENU positions for tip and previous point
-    const tipENU = sunPathPointToENU(taggedPoints[idx].pt, DOME_RADIUS);
+    // Current and next point for direction
+    const tipENU = sunPathPointToENU(pt, DOME_RADIUS);
     const nextENU = sunPathPointToENU(taggedPoints[(idx + 1) % taggedPoints.length].pt, DOME_RADIUS);
 
-    // Direction vector in ENU (from prev to tip)
+    // Direction vector (prev to tip direction ideally, using next-tip here as approximation for tangent)
     const dx = nextENU[0] - tipENU[0];
     const dy = nextENU[1] - tipENU[1];
     const dz = nextENU[2] - tipENU[2];
@@ -107,18 +104,13 @@ function addArrowheads(
     if (dirLen < 1e-6) continue;
 
     // Unit direction
-    const ux = dx / dirLen;
-    const uy = dy / dirLen;
-    const uz = dz / dirLen;
+    const ux = dx / dirLen, uy = dy / dirLen, uz = dz / dirLen;
 
-    // Radial direction at tip (from origin to tip, normalized)
+    // Radial vector (normal to sphere surface)
     const rLen = Math.sqrt(tipENU[0] ** 2 + tipENU[1] ** 2 + tipENU[2] ** 2);
-    const rx = tipENU[0] / rLen;
-    const ry = tipENU[1] / rLen;
-    const rz = tipENU[2] / rLen;
+    const rx = tipENU[0] / rLen, ry = tipENU[1] / rLen, rz = tipENU[2] / rLen;
 
-    // Perpendicular to both direction and radial (tangent to dome surface)
-    // perp = cross(direction, radial)
+    // Perpendicular vector (tangent to surface, perp to direction) = Cross(dir, radial)
     let px = uy * rz - uz * ry;
     let py = uz * rx - ux * rz;
     let pz = ux * ry - uy * rx;
@@ -126,22 +118,23 @@ function addArrowheads(
     if (pLen < 1e-6) continue;
     px /= pLen; py /= pLen; pz /= pLen;
 
-    // Reverse direction
+    // Reverse direction for arrow wings
     const bx = -ux, by = -uy, bz = -uz;
 
-    // Left wing: rotate reverse direction toward +perp by halfAngle
+    // Rotate reverse vector by +/- halfAngle in the plane defined by (revDir, perp)
     const cosH = Math.cos(halfAngle);
     const sinH = Math.sin(halfAngle);
+
+    // Left wing
     const lwx = bx * cosH + px * sinH;
     const lwy = by * cosH + py * sinH;
     const lwz = bz * cosH + pz * sinH;
 
-    // Right wing: rotate reverse direction toward -perp by halfAngle
+    // Right wing
     const rwx = bx * cosH - px * sinH;
     const rwy = by * cosH - py * sinH;
     const rwz = bz * cosH - pz * sinH;
 
-    // Wing endpoint positions in ENU
     const leftWingENU: [number, number, number] = [
       tipENU[0] + wingLen * lwx,
       tipENU[1] + wingLen * lwy,
@@ -153,40 +146,142 @@ function addArrowheads(
       tipENU[2] + wingLen * rwz,
     ];
 
-    // Convert to ECEF
     const tipECEF = enuToECEF(...tipENU, center);
     const leftECEF = enuToECEF(...leftWingENU, center);
     const rightECEF = enuToECEF(...rightWingENU, center);
 
-    // Draw two wing segments forming a chevron ">"
-    const arrowPrim = new Cesium.Primitive({
-      geometryInstances: [
-        new Cesium.GeometryInstance({
-          geometry: new Cesium.PolylineGeometry({
-            positions: [leftECEF, tipECEF],
-            width: 2,
-            vertexFormat: Cesium.PolylineMaterialAppearance.VERTEX_FORMAT,
-            arcType: Cesium.ArcType.NONE,
-          }),
-        }),
-        new Cesium.GeometryInstance({
-          geometry: new Cesium.PolylineGeometry({
-            positions: [rightECEF, tipECEF],
-            width: 2,
-            vertexFormat: Cesium.PolylineMaterialAppearance.VERTEX_FORMAT,
-            arcType: Cesium.ArcType.NONE,
-          }),
-        }),
-      ],
+    const createWing = (p1: Cesium.Cartesian3, p2: Cesium.Cartesian3) => new Cesium.GeometryInstance({
+      geometry: new Cesium.PolylineGeometry({
+        positions: [p1, p2],
+        width: 2,
+        vertexFormat: Cesium.PolylineMaterialAppearance.VERTEX_FORMAT,
+        arcType: Cesium.ArcType.NONE,
+      }),
+    });
+
+    collection.add(new Cesium.Primitive({
+      geometryInstances: [createWing(leftECEF, tipECEF), createWing(rightECEF, tipECEF)],
       appearance: new Cesium.PolylineMaterialAppearance({
         material: Cesium.Material.fromType('Color', { color }),
       }),
-    });
-    collection.add(arrowPrim);
+    }));
   }
 }
 
-// ---- Imperative hook for adding sun path primitives to the scene ----
+/**
+ * Add a text label to the collection.
+ */
+function addLabel(
+  collection: Cesium.LabelCollection,
+  position: Cesium.Cartesian3,
+  text: string,
+  options: {
+    color: Cesium.Color;
+    font?: string;
+    verticalOrigin?: Cesium.VerticalOrigin;
+    pixelOffset?: Cesium.Cartesian2;
+  }
+) {
+  collection.add({
+    position,
+    text,
+    font: options.font || 'bold 18px monospace',
+    fillColor: options.color,
+    outlineColor: Cesium.Color.BLACK,
+    outlineWidth: 4,
+    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+    pixelOffset: options.pixelOffset || new Cesium.Cartesian2(0, 0),
+    verticalOrigin: options.verticalOrigin || Cesium.VerticalOrigin.CENTER,
+    horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+    show: true,
+  });
+}
+
+/**
+ * Render all labels for a single sun path line.
+ */
+function renderLineLabels(
+  line: SunPathLine,
+  positions: Cesium.Cartesian3[],
+  center: Cesium.Cartesian3,
+  labels: Cesium.LabelCollection
+) {
+  // Determine basic label styles
+  let labelColor = Cesium.Color.GOLD;
+  let fontSize = 'bold 18px monospace';
+
+  if (line.type === 'solstice') {
+    labelColor = Cesium.Color.ORANGE;
+    fontSize = 'bold 22px monospace';
+  } else if (line.type === 'dst') {
+    labelColor = Cesium.Color.LIGHTPINK;
+  } else if (line.type === 'hour') {
+    labelColor = Cesium.Color.WHITE.withAlpha(0.85);
+    fontSize = 'bold 16px monospace';
+  }
+
+  // Helper to convert SunPathPoint to ECEF
+  const toGlobal = (pt: SunPathPoint) => enuToECEF(...sunPathPointToENU(pt, DOME_RADIUS), center);
+
+  // Common label adding helper
+  const drawLineLabel = (
+    pos: Cesium.Cartesian3,
+    text: string,
+    verticalPos: 'above' | 'below'
+  ) => {
+    addLabel(labels, pos, text, {
+      color: labelColor,
+      font: fontSize,
+      verticalOrigin: verticalPos === 'above' ? Cesium.VerticalOrigin.BOTTOM : Cesium.VerticalOrigin.TOP,
+      pixelOffset: new Cesium.Cartesian2(0, verticalPos === 'above' ? -6 : 6),
+    });
+  };
+
+  // 1. Hour Lines
+  if (line.type === 'hour') {
+    if (line.topLabelPoint) {
+      drawLineLabel(toGlobal(line.topLabelPoint), line.labelAbove || line.label, 'above');
+    }
+    if (line.bottomLabelPoint) {
+      drawLineLabel(toGlobal(line.bottomLabelPoint), line.labelBelow || line.label, 'below');
+    }
+  }
+
+  // 2. Month / Solstice / DST Lines
+  if (['month', 'solstice', 'dst'].includes(line.type)) {
+    // Main label (mid)
+    const midPos = line.midLabelPoint ? toGlobal(line.midLabelPoint) : positions[Math.floor(positions.length / 2)];
+    if (line.labelAbove) drawLineLabel(midPos, line.labelAbove, 'above');
+
+    // Bottom mid label (if distinct from top)
+    const midPosBelow = line.midLabelPointBelow ? toGlobal(line.midLabelPointBelow) : midPos;
+    if (line.labelBelow) drawLineLabel(midPosBelow, line.labelBelow, 'below');
+
+    // Extra labels (9am, 3pm, etc)
+    if (line.extraLabelPoints) {
+      for (const ep of line.extraLabelPoints) {
+        const p = toGlobal(ep.point);
+        if (ep.labelAbove) drawLineLabel(p, ep.labelAbove, 'above');
+        if (ep.labelBelow) drawLineLabel(p, ep.labelBelow, 'below');
+      }
+    }
+  }
+
+  // 3. DST Offset Hour Labels
+  if (line.dstHourLabels && line.dstHourLabels.length > 0) {
+    const isAbove = line.dstHourLabelsPosition === 'above';
+    for (const hl of line.dstHourLabels) {
+       addLabel(labels, toGlobal(hl.point), hl.label, {
+         color: Cesium.Color.LIGHTPINK.withAlpha(0.9),
+         font: 'bold 15px monospace',
+         verticalOrigin: isAbove ? Cesium.VerticalOrigin.BOTTOM : Cesium.VerticalOrigin.TOP,
+         pixelOffset: new Cesium.Cartesian2(0, isAbove ? -6 : 6),
+       });
+    }
+  }
+}
+
+// ---- Imperative hook ----
 
 /**
  * Custom hook that creates and manages the sun-path PrimitiveCollection
@@ -218,15 +313,11 @@ export function useSunPathPrimitives(
   React.useEffect(() => {
     // Cleanup previous
     if (collectionRef.current && viewer) {
-      try {
-        viewer.scene.primitives.remove(collectionRef.current);
-      } catch { /* ignore */ }
+      try { viewer.scene.primitives.remove(collectionRef.current); } catch { /* ignore */ }
       collectionRef.current = null;
     }
     if (labelsRef.current && viewer) {
-      try {
-        viewer.scene.primitives.remove(labelsRef.current);
-      } catch { /* ignore */ }
+      try { viewer.scene.primitives.remove(labelsRef.current); } catch { /* ignore */ }
       labelsRef.current = null;
     }
 
@@ -243,19 +334,17 @@ export function useSunPathPrimitives(
     } catch { /* location has no DST or lookup failed */ }
 
     const lines = generateSunPathLines(latDeg, lonDeg, undefined, dstTransitions, tz);
+
     const collection = new Cesium.PrimitiveCollection();
+    const labelCollection = new Cesium.LabelCollection({ scene: viewer.scene });
 
-    const labelCollection = new Cesium.LabelCollection({
-      scene: viewer.scene,
-    });
-
+    // Render Lines & Static Labels
     for (const line of lines) {
       const positions = lineToPositions(line, center);
       if (positions.length < 2) continue;
 
       const style = styleForLine(line);
-
-      const polyline = new Cesium.Primitive({
+      collection.add(new Cesium.Primitive({
         geometryInstances: new Cesium.GeometryInstance({
           geometry: new Cesium.PolylineGeometry({
             positions,
@@ -265,13 +354,9 @@ export function useSunPathPrimitives(
           }),
         }),
         appearance: new Cesium.PolylineMaterialAppearance({
-          material: Cesium.Material.fromType('Color', {
-            color: style.color,
-          }),
+          material: Cesium.Material.fromType('Color', { color: style.color }),
         }),
-      });
-
-      collection.add(polyline);
+      }));
 
       // Add arrowheads on hour lines to show annual direction
       // Uses the full unsplit point set (allHourPoints) for even spacing across the year
@@ -283,165 +368,8 @@ export function useSunPathPrimitives(
         );
       }
 
-      if (line.type === 'month' || line.type === 'solstice' || line.type === 'dst') {
-        // Use explicit midLabelPoint (computed at solar noon) if available,
-        // otherwise fall back to the array midpoint
-        const labelPos = line.midLabelPoint
-          ? enuToECEF(...sunPathPointToENU(line.midLabelPoint, DOME_RADIUS), center)
-          : positions[Math.floor(positions.length / 2)];
-        const labelColor =
-          line.type === 'solstice'
-            ? Cesium.Color.ORANGE
-            : line.type === 'dst'
-            ? Cesium.Color.LIGHTPINK
-            : Cesium.Color.GOLD;
-        const fontSize =
-          line.type === 'solstice' ? 'bold 22px monospace'
-          : line.type === 'dst' ? 'bold 18px monospace'
-          : 'bold 18px monospace';
-
-        // Label above the line
-        if (line.labelAbove) {
-          labelCollection.add({
-            position: labelPos,
-            text: line.labelAbove,
-            font: fontSize,
-            fillColor: labelColor,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 4,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, -6),
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            show: true,
-          });
-        }
-
-        // Label below the line — use separate midLabelPointBelow if available
-        // (for intermediate arcs where the below label is a different date)
-        if (line.labelBelow) {
-          const belowPos = line.midLabelPointBelow
-            ? enuToECEF(...sunPathPointToENU(line.midLabelPointBelow, DOME_RADIUS), center)
-            : labelPos;
-          labelCollection.add({
-            position: belowPos,
-            text: line.labelBelow,
-            font: fontSize,
-            fillColor: labelColor,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 4,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, 6),
-            verticalOrigin: Cesium.VerticalOrigin.TOP,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            show: true,
-          });
-        }
-
-        // Extra labels at 9:00 and 17:00 positions
-        if (line.extraLabelPoints) {
-          for (const ep of line.extraLabelPoints) {
-            const epPos = enuToECEF(...sunPathPointToENU(ep.point, DOME_RADIUS), center);
-            if (ep.labelAbove) {
-              labelCollection.add({
-                position: epPos,
-                text: ep.labelAbove,
-                font: fontSize,
-                fillColor: labelColor,
-                outlineColor: Cesium.Color.BLACK,
-                outlineWidth: 4,
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                pixelOffset: new Cesium.Cartesian2(0, -6),
-                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-                show: true,
-              });
-            }
-            if (ep.labelBelow) {
-              labelCollection.add({
-                position: epPos,
-                text: ep.labelBelow,
-                font: fontSize,
-                fillColor: labelColor,
-                outlineColor: Cesium.Color.BLACK,
-                outlineWidth: 4,
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                pixelOffset: new Cesium.Cartesian2(0, 6),
-                verticalOrigin: Cesium.VerticalOrigin.TOP,
-                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-                show: true,
-              });
-            }
-          }
-        }
-      }
-
-      // For hour lines, label at the solstice arc endpoints
-      if (line.type === 'hour') {
-        // Use explicit solstice-intersection points (skip label if solstice is below horizon)
-        const topPos = line.topLabelPoint
-          ? enuToECEF(...sunPathPointToENU(line.topLabelPoint, DOME_RADIUS), center)
-          : undefined;
-        const bottomPos = line.bottomLabelPoint
-          ? enuToECEF(...sunPathPointToENU(line.bottomLabelPoint, DOME_RADIUS), center)
-          : undefined;
-
-        // Label above the top (summer solstice) end
-        if (topPos) {
-          labelCollection.add({
-            position: topPos,
-            text: line.labelAbove || line.label,
-            font: 'bold 16px monospace',
-            fillColor: Cesium.Color.WHITE.withAlpha(0.85),
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, -8),
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            show: true,
-          });
-        }
-
-        // Label below the bottom (winter solstice) end
-        if (bottomPos) {
-          labelCollection.add({
-            position: bottomPos,
-            text: line.labelBelow || line.label,
-            font: 'bold 16px monospace',
-            fillColor: Cesium.Color.WHITE.withAlpha(0.85),
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, 8),
-            verticalOrigin: Cesium.VerticalOrigin.TOP,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            show: true,
-          });
-        }
-      }
-
-      // DST per-hour shifted clock labels
-      if (line.dstHourLabels && line.dstHourLabels.length > 0) {
-        const isAbove = line.dstHourLabelsPosition === 'above';
-        for (const hl of line.dstHourLabels) {
-          const [e, n, u] = sunPathPointToENU(hl.point, DOME_RADIUS);
-          const hlPos = enuToECEF(e, n, u, center);
-          labelCollection.add({
-            position: hlPos,
-            text: hl.label,
-            font: 'bold 15px monospace',
-            fillColor: Cesium.Color.LIGHTPINK.withAlpha(0.9),
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, isAbove ? -6 : 6),
-            verticalOrigin: isAbove ? Cesium.VerticalOrigin.BOTTOM : Cesium.VerticalOrigin.TOP,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            show: true,
-          });
-        }
-      }
+      // Render Labels
+      renderLineLabels(line, positions, center, labelCollection);
     }
 
     // Add current sun position indicator
@@ -466,18 +394,12 @@ export function useSunPathPrimitives(
         });
         collection.add(billboardCollection);
 
-        labelCollection.add({
-          position: sunCart,
-          text: 'NOW',
+        // "NOW" label
+        addLabel(labelCollection, sunCart, 'NOW', {
+          color: Cesium.Color.YELLOW,
           font: 'bold 14px monospace',
-          fillColor: Cesium.Color.YELLOW,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 3,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, 32), // Adjusted offset for larger meter-based billboard
           verticalOrigin: Cesium.VerticalOrigin.TOP,
-          // Remove disableDepthTestDistance so walls occlude it
-          show: true,
+          pixelOffset: new Cesium.Cartesian2(0, 32),
         });
       }
     } catch (e) {
