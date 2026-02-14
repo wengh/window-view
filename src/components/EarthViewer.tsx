@@ -74,6 +74,7 @@ interface EarthViewerProps {
     fov?: number
   } | null
   showSunPath?: boolean
+  joystickRef?: React.MutableRefObject<{ x: number; y: number }>
 }
 
 export const EarthViewer = React.memo<EarthViewerProps>(
@@ -86,6 +87,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(
     initialOutsideCamera,
     startInsideCamera,
     showSunPath = false,
+    joystickRef,
   }) => {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
     const [tileset, setTileset] = useState<any>(null)
@@ -326,6 +328,11 @@ export const EarthViewer = React.memo<EarthViewerProps>(
       fpControllerRef.current = new FPController(viewer)
 
       const onTick = () => {
+        // Update Joystick input
+        if (joystickRef?.current && fpControllerRef.current) {
+          fpControllerRef.current.setJoystickVector(joystickRef.current.x, joystickRef.current.y)
+        }
+
         fpControllerRef.current?.update(0.016)
 
         // Broadcast camera state ALWAYS (throttled)
@@ -358,7 +365,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(
         viewer.clock.onTick.removeEventListener(onTick)
         fpControllerRef.current?.destroy()
       }
-    }, [viewer, onCameraChange])
+    }, [viewer, onCameraChange, joystickRef])
 
     // Camera Mode Switch
     useEffect(() => {
@@ -453,6 +460,13 @@ export const EarthViewer = React.memo<EarthViewerProps>(
         ssc.enableCollisionDetection = true // IMPORTANT: Restore collision to prevent underground crashes
 
         // Custom Controls: Right Drag to Tilt, Remove Zoom from Right Drag
+        ssc.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG]
+        ssc.translateEventTypes = [
+          {
+            eventType: Cesium.CameraEventType.LEFT_DRAG,
+            modifier: Cesium.KeyboardEventModifier.SHIFT,
+          },
+        ]
         ssc.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH]
         ssc.tiltEventTypes = [
           Cesium.CameraEventType.MIDDLE_DRAG,
@@ -604,6 +618,26 @@ export const EarthViewer = React.memo<EarthViewerProps>(
           }
         },
         (Cesium as any).ScreenSpaceEventType.WHEEL
+      )
+
+      // PINCH_START / PINCH_MOVE - FOV zoom
+      // Note: Cesium's default behavior might conflict if not disabled.
+      // We already disabled 'enableZoom' on screenSpaceCameraController, so custom handling is needed.
+      handler.setInputAction(
+        (movement: any) => {
+          if (isInsideView && fpControllerRef.current) {
+            // Cesium PINCH_MOVE event provides distance properties as numbers (distance between fingers)
+            // movement.distance.startPosition = distance at start of this frame's move
+            // movement.distance.endPosition = distance at end of this frame's move
+            const p1 = movement.distance.startPosition
+            const p2 = movement.distance.endPosition
+            const diff = p2 - p1 // positive = spreading = zoom in
+
+            // If spreading (diff > 0), we want to zoom IN (decrease FOV).
+            fpControllerRef.current.handlePinch(diff * 5.0) // multiplier for sensitivity
+          }
+        },
+        (Cesium as any).ScreenSpaceEventType.PINCH_MOVE
       )
 
       // MIDDLE_CLICK - reset FOV to 60°

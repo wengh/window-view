@@ -1,0 +1,27 @@
+.joystick-container {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  z-index: 1000;
+  display: none; /* Hidden by default on desktop */
+}
+
+/* Show on touch devices or small screens */
+@media (pointer: coarse) or (max-width: 768px) {
+  .joystick-container {
+    display: block;
+  }
+}
+
+.joystick-base {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(2px);
+}
+
+.joystick-stick {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.joystick-base.active .joystick-stick {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}

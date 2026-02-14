@@ -4,6 +4,8 @@ import './App.css'
 import type { WindowSelection } from './logic/WindowSelector'
 import { Cartesian3, Quaternion, Ion } from 'cesium'
 
+import { Joystick } from './components/Joystick'
+
 // Helper to parse hash state
 const parseHash = (hash: string) => {
   if (!hash)
@@ -98,6 +100,9 @@ function App() {
   const [externalMode, setExternalMode] = useState(initialData.mode)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [minimized, setMinimized] = useState(false)
+
+  // Joystick state ref (avoiding re-renders for 60fps movement)
+  const joystickRef = useRef({ x: 0, y: 0 })
 
   const handleCopyLink = () => {
     const url = window.location.href
@@ -288,7 +293,17 @@ function App() {
         // ONLY use external camera for inside start if the external mode was explicitly viewing
         startInsideCamera={mode === 'viewing' && externalMode === 'viewing' ? externalCamera : null}
         showSunPath={showSunPath}
+        joystickRef={joystickRef}
       />
+      {mode === 'viewing' && (
+        <div className="joystick-container">
+          <Joystick
+            onMove={(x, y) => {
+              joystickRef.current = { x, y }
+            }}
+          />
+        </div>
+      )}
 
       <div className={`ui-overlay ${minimized ? 'minimized' : ''}`}>
         <div className="overlay-header">
@@ -406,16 +421,6 @@ function App() {
                       <div>
                         <span style={{ color: '#FFB6C1' }}>━━</span> DST hours
                       </div>
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 10,
-                        fontSize: '0.8em',
-                        opacity: 0.8,
-                        fontStyle: 'italic',
-                      }}
-                    >
-                      Note: DST is localized to the timezone of the selected location.
                     </div>
                   </>
                 )}

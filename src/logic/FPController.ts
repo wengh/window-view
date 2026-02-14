@@ -15,6 +15,8 @@ export class FPController {
 
   private enabled = false
 
+  private joystickVector = { x: 0, y: 0 }
+
   constructor(viewer: Viewer) {
     this.viewer = viewer
     this.setupListeners()
@@ -32,7 +34,13 @@ export class FPController {
       this.keys.a = false
       this.keys.s = false
       this.keys.d = false
+      this.joystickVector = { x: 0, y: 0 }
     }
+  }
+
+  public setJoystickVector(x: number, y: number) {
+    this.joystickVector.x = x
+    this.joystickVector.y = y
   }
 
   public update(dt: number) {
@@ -65,18 +73,32 @@ export class FPController {
     )
     rightFlat = Cartesian3.normalize(rightFlat, rightFlat)
 
-    // Apply movement
-    if (this.keys.w) {
-      camera.move(forwardFlat, moveDistance)
+    // Calculate input direction
+    let inputX = 0
+    let inputY = 0
+
+    if (this.keys.w) inputY += 1.0
+    if (this.keys.s) inputY -= 1.0
+    if (this.keys.d) inputX += 1.0
+    if (this.keys.a) inputX -= 1.0
+
+    // Add joystick input
+    // Joystick Y is usually passed as "forward/backward" (positive up), so it maps to Y
+    inputX += this.joystickVector.x
+    inputY += this.joystickVector.y
+
+    // Normalize if magnitude > 1 to prevent speed boost
+    const length = Math.sqrt(inputX * inputX + inputY * inputY)
+    if (length > 1.0) {
+      inputX /= length
+      inputY /= length
     }
-    if (this.keys.s) {
-      camera.move(forwardFlat, -moveDistance)
+
+    if (Math.abs(inputY) > 0.01) {
+      camera.move(forwardFlat, inputY * moveDistance)
     }
-    if (this.keys.d) {
-      camera.move(rightFlat, moveDistance)
-    }
-    if (this.keys.a) {
-      camera.move(rightFlat, -moveDistance)
+    if (Math.abs(inputX) > 0.01) {
+      camera.move(rightFlat, inputX * moveDistance)
     }
   }
 
@@ -105,6 +127,22 @@ export class FPController {
         roll: 0,
       },
     })
+  }
+
+  public handlePinch(deltaPixels: number) {
+    if (!this.enabled) return
+    const camera = this.viewer.camera
+
+    const frustum = camera.frustum as PerspectiveFrustum
+    if (frustum.fov !== undefined) {
+      const currentFov = frustum.fov
+      const sensitivity = 0.002 // Slightly more sensitive for pinch
+      // Spreading fingers (positive delta) -> Zoom In -> Decrease FOV
+      // Pinching fingers (negative delta) -> Zoom Out -> Increase FOV
+      let newFov = currentFov - deltaPixels * sensitivity
+      newFov = Math.max(CesiumMath.toRadians(10), Math.min(CesiumMath.toRadians(120), newFov))
+      frustum.fov = newFov
+    }
   }
 
   public handleWheel(delta: number) {
