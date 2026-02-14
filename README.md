@@ -1,163 +1,125 @@
-# 3D Window Viewer
+# Window View
 
-A web application that lets you select a window on any building in the world using Google's Photorealistic 3D Tiles, then experience an immersive "inside looking out" view as if you were standing in a room behind that window.
+**See the view from any window in the world — before you ever visit.**
 
-**Note**: You must set up a **Google Maps Platform API Key** with the **Map Tiles API** enabled to use this. See [Setup](#obtaining-a-google-maps-api-key).
+Apartment hunting? Curious about a listing's natural light or skyline view? Window View lets you click on any building on a 3D globe, pick a window, and step inside a virtual room to see exactly what you'd see looking out — all from your browser.
 
-## Features
+> **Try it now:** [wengh.github.io/window-view](https://wengh.github.io/window-view)
+>
+> You'll need a free Google Maps API key ([instructions below](#getting-a-google-maps-api-key)).
 
-- **3D Earth Navigation**: Explore the entire world using Google's Photorealistic 3D Tiles
-- **Window Selection**: Click on any building surface to define a "window"
-- **Immersive View Mode**: Step inside and look out through your selected window
-- **First-Person Controls**: WASD movement and mouse look for natural exploration
-- **State Persistence**: Your window selection, camera position, and mode are saved in the URL hash
-- **Virtual Room**: A procedurally generated room (floor, walls, ceiling) appears behind the window
-- **Sun Path Visualization**: View the sun's annual trajectory with date and time labels directly in the sky
+---
+
+## Why This Exists
+
+Listing photos can be misleading. "City views" might mean a sliver of sky between two buildings, and "sun-drenched" might only apply for 20 minutes a day. Window View solves this by letting you:
+
+- 🏙️ **Preview the view** from any unit, any floor, any direction — before scheduling a tour.
+- ☀️ **Check the sunlight** using the built-in sun path overlay, which shows you exactly when and where the sun will be visible from a given window throughout the year.
+- 🔗 **Save & share views** — every window selection is encoded in the URL, so you can bookmark favorites or send them to a friend.
+
+---
 
 ## Examples
 
-NYC:
-- 15 William Street, unit [#41I](https://the15william.com/unit-41I)
+### New York — 15 William Street, unit [#41I](https://the15william.com/unit-41I)
 
-  https://wengh.github.io/window-view/#win=1333828.147,-4654719.573,4137757.221,0.554,0.636,0.537,-0.311,-0.367,-0.877,-0.011,3.500,2.200&mode=navigating&cam=1333871.887,-4654709.297,4137881.935,3.482,-0.659,0.000
+[**→ Open in Window View**](https://wengh.github.io/window-view/#win=1333828.147,-4654719.573,4137757.221,0.554,0.636,0.537,-0.311,-0.367,-0.877,-0.011,3.500,2.200&mode=navigating&cam=1333871.887,-4654709.297,4137881.935,3.482,-0.659,0.000)
 
-  From this app:
-  <img width="2504" height="2055" alt="image" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" />
+| Window View | Real Life |
+|:-----------:|:---------:|
+| <img width="600" alt="Window View screenshot of 15 William St" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" /> | <img width="600" alt="Real photo from 15 William St" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" /> |
 
-  IRL:
-  <img width="2014" height="1647" alt="image" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" />
+### Chicago — Wolf Point East, unit [#4103](https://a.peek.us/viewer?token=EF_C6iJ1gK)
 
-Chicago:
-- Wolf Point East, unit [#4103](https://a.peek.us/viewer?token=EF_C6iJ1gK)
+[**→ Open in Window View**](https://wengh.github.io/window-view/#win=196103.197,-4751503.996,4236516.016,0.025,-0.665,-0.747,-0.934,-0.019,-0.006,-0.356,3.500,2.500&mode=viewing&cam=196103.311,-4751503.880,4236516.291,3.129,0.595,6.283,2.094&sp=1)
 
-  https://wengh.github.io/window-view/#win=196103.197,-4751503.996,4236516.016,0.025,-0.665,-0.747,-0.934,-0.019,-0.006,-0.356,3.500,2.500&mode=viewing&cam=196103.311,-4751503.880,4236516.291,3.129,0.595,6.283,2.094&sp=1
+| Window View (+ sun path) | Real Life |
+|:-----------:|:---------:|
+| <img width="600" alt="Window View screenshot of Wolf Point East" src="https://github.com/user-attachments/assets/b7f44f8d-75f3-40aa-bf0f-eddb2e01474d" /> | <img width="600" alt="Real photo from Wolf Point East" src="https://github.com/user-attachments/assets/9ef28cbf-560a-4200-b72f-00c6863d8e25" /> |
 
-  From this app:
-  <img width="3744" height="2063" alt="image" src="https://github.com/user-attachments/assets/b7f44f8d-75f3-40aa-bf0f-eddb2e01474d" />
+### Waterloo — E5 Bridge
 
-  IRL:
-  <img width="2197" height="1865" alt="image" src="https://github.com/user-attachments/assets/9ef28cbf-560a-4200-b72f-00c6863d8e25" />
+[**→ Open in Window View**](https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.916,-4573192.487,4365933.415,5.281,-0.038,6.283)
 
-Waterloo:
-- E5 bridge
+<img width="600" alt="Window View screenshot of E5 bridge" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
 
-  https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.916,-4573192.487,4365933.415,5.281,-0.038,6.283
+---
 
-  From this app:
-  <img width="3744" height="2063" alt="image" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
+## How to Use
 
-## Controls
+1. **Navigate** the 3D globe to find the building you're interested in.
+2. Click **"Enter Selection Mode"** in the control panel.
+3. **Click on a wall** to place a window where you want it.
+4. Adjust the **width** and **height** sliders to match the window size.
+5. Click **"View from Inside"** to step into the room and look out.
+6. Use **WASD** to move around and **click-drag** to look in any direction.
+7. Toggle **"Show Sun Path"** to visualize sunlight throughout the year.
 
-### Navigation Mode (Default)
+### Controls Reference
+
+#### Globe Navigation (default)
 | Action | Control |
 |--------|---------|
 | Rotate view | Left-click + drag |
 | Pan | Right-click + drag |
 | Zoom | Scroll wheel |
 
-### Selection Mode
+#### Selecting a Window
 | Action | Control |
 |--------|---------|
-| Select window | Left-click on a building surface |
-| Adjust window size | Use the Width/Height sliders in the UI panel |
+| Place window | Left-click on a building surface |
+| Resize window | Width/Height sliders in the panel |
 
-### First-Person View Mode
+#### Inside View (first-person)
 | Action | Control |
 |--------|---------|
-| Move forward | W |
-| Move backward | S |
-| Strafe left | A |
-| Strafe right | D |
+| Move | W A S D |
 | Look around | Left-click + drag |
 | Zoom (FOV) | Scroll wheel |
-| Reset FOV | Middle-click |
-| Toggle Sun Path | Click "Show Sun Path" button |
-
-## Usage Workflow
-
-1. **Navigate** to a building you're interested in
-2. Click **"Enter Selection Mode"** in the control panel
-3. **Click** on a wall surface to place a window
-4. Adjust the **width** and **height** sliders to size the window
-5. Click **"View from Inside"** to enter the immersive view
-6. Use **WASD** and **mouse drag** to look around from inside the virtual room
-7. Click **"Exit View"** to return to navigation mode
-
-## URL State Persistence
-
-The application automatically saves the following to the URL hash:
-- Window selection (position, normal, size)
-- Camera position and orientation (including Field of View)
-- Current mode (navigating/selecting/viewing)
-- Sun Path visibility state
-
-You can bookmark or share URLs to return to the exact same view later.
-
-## Technical Stack
-
-- **React** + **TypeScript**
-- **Vite** (build tool)
-- **CesiumJS** + **Resium** (3D globe rendering)
-- **Google Photorealistic 3D Tiles** (building/terrain data)
+| Reset zoom | Middle-click |
+| Sun path | Click "Show Sun Path" button |
 
 ---
 
-## Setup
+## Sharing & Bookmarking
 
-### Requirements
+Everything about your current view — the window you selected, your camera angle, and whether the sun path is visible — is automatically saved in the URL. Just copy the address bar to:
 
-- Node.js 18+ and npm
-- A **Google Maps Platform API Key** with the **Map Tiles API** enabled
-- Modern web browser with WebGL support
+- 📌 **Bookmark** your favorite apartments
+- 📤 **Share** a specific view with your partner, roommate, or broker
+- 🔁 **Come back later** and pick up exactly where you left off
 
-### Obtaining a Google Maps API Key
+---
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+## Getting a Google Maps API Key
 
-2. **Create a new project** (or select an existing one)
-   - Click the project dropdown at the top of the page
-   - Click "New Project"
-   - Enter a project name and click "Create"
+Window View uses Google's Photorealistic 3D Tiles to render the world. You'll need a free API key to get started.
 
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. **Create a new project** (or select an existing one).
 3. **Enable the Map Tiles API**
-   - Go directly to the [Map Tiles API page](https://console.cloud.google.com/apis/library/tile.googleapis.com)
-   - Or: In the left sidebar, go to **APIs & Services** → **Library** and search for "Map Tiles API"
-   - Click **"Enable"**
-
-   > **Important**: You need the "Map Tiles API", not the "Maps JavaScript API". The Map Tiles API provides access to the Photorealistic 3D Tiles.
-
+   - Go to [Map Tiles API](https://console.cloud.google.com/apis/library/tile.googleapis.com) and click **"Enable"**.
+   - > ⚠️ You need the **"Map Tiles API"**, not the "Maps JavaScript API".
 4. **Create an API Key**
-   - Go to **APIs & Services** → **Credentials**
-   - Click **"+ Create Credentials"** → **"API Key"**
-   - Your new API key will be displayed - copy it
+   - Go to **APIs & Services → Credentials** → **"+ Create Credentials"** → **"API Key"**.
+5. **Enter your key** when prompted by the app. It's stored locally in your browser and never sent to any third-party server.
 
-### Installation
+---
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/wengh/window-view.git
-   cd window-view
-   ```
+## Running Locally
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+If you'd like to run your own copy:
 
-3. **Configure API Key** (choose one method):
+```bash
+git clone https://github.com/wengh/window-view.git
+cd window-view
+npm install
+npm run dev
+```
 
-   - **Option A: Environment Variable**
-     Create a `.env` file in the project root:
-     ```
-     VITE_GOOGLE_MAPS_API_KEY=your_api_key_here
-     ```
+Then open `http://localhost:5173`. You can optionally create a `.env` file with your API key so you don't have to enter it each time:
 
-   - **Option B: Runtime Entry**
-     The app will prompt you for the API key on first load. It's saved locally to your browser's `localStorage` for future sessions and is never transmitted to any third-party server.
-
-4. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open** `http://localhost:5173` in your browser
+```
+VITE_GOOGLE_MAPS_API_KEY=your_key_here
+```
