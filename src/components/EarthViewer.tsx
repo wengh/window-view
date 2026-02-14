@@ -304,12 +304,12 @@ export const EarthViewer = React.memo<EarthViewerProps>(
         ssc.enableTilt = false
         ssc.enableLook = false
 
-          // Clear bindings to prevent any leakage (like right-click zoom)
-          ssc.zoomEventTypes = [];
-          ssc.tiltEventTypes = [];
-          ssc.rotateEventTypes = [];
-          ssc.translateEventTypes = [];
-          ssc.lookEventTypes = [];
+        // Clear bindings to prevent any leakage (like right-click zoom)
+        ssc.zoomEventTypes = []
+        ssc.tiltEventTypes = []
+        ssc.rotateEventTypes = []
+        ssc.translateEventTypes = []
+        ssc.lookEventTypes = []
 
         // Prevent skybox from disappearing & Provide Blue Sky:
         // Disable dynamic atmosphere/globe to avoid artifacts.
@@ -381,18 +381,21 @@ export const EarthViewer = React.memo<EarthViewerProps>(
         ssc.enableLook = true
         ssc.enableCollisionDetection = true // IMPORTANT: Restore collision to prevent underground crashes
 
-            // Custom Controls: Right Drag to Tilt, Remove Zoom from Right Drag
-            ssc.zoomEventTypes = [
-                Cesium.CameraEventType.WHEEL,
-                Cesium.CameraEventType.PINCH
-            ];
-            ssc.tiltEventTypes = [
-                Cesium.CameraEventType.MIDDLE_DRAG,
-                Cesium.CameraEventType.PINCH,
-                Cesium.CameraEventType.RIGHT_DRAG,
-                { eventType: Cesium.CameraEventType.LEFT_DRAG, modifier: Cesium.KeyboardEventModifier.CTRL },
-                { eventType: Cesium.CameraEventType.RIGHT_DRAG, modifier: Cesium.KeyboardEventModifier.CTRL }
-            ];
+        // Custom Controls: Right Drag to Tilt, Remove Zoom from Right Drag
+        ssc.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH]
+        ssc.tiltEventTypes = [
+          Cesium.CameraEventType.MIDDLE_DRAG,
+          Cesium.CameraEventType.PINCH,
+          Cesium.CameraEventType.RIGHT_DRAG,
+          {
+            eventType: Cesium.CameraEventType.LEFT_DRAG,
+            modifier: Cesium.KeyboardEventModifier.CTRL,
+          },
+          {
+            eventType: Cesium.CameraEventType.RIGHT_DRAG,
+            modifier: Cesium.KeyboardEventModifier.CTRL,
+          },
+        ]
 
         const frustum = viewer.camera.frustum as PerspectiveFrustum
         if (frustum.fov) {
@@ -497,9 +500,9 @@ export const EarthViewer = React.memo<EarthViewerProps>(
     useEffect(() => {
       if (!viewer) return
 
-    // Prevent context menu
-    const preventDefault = (e: Event) => e.preventDefault();
-    viewer.scene.canvas.addEventListener('contextmenu', preventDefault);
+      // Prevent context menu
+      const preventDefault = (e: Event) => e.preventDefault()
+      viewer.scene.canvas.addEventListener('contextmenu', preventDefault)
 
       const handler = new (Cesium as any).ScreenSpaceEventHandler(viewer.scene.canvas)
 
@@ -559,10 +562,10 @@ export const EarthViewer = React.memo<EarthViewerProps>(
 
       return () => {
         handler.destroy()
-          if (viewer && viewer.scene && viewer.scene.canvas) {
-           viewer.scene.canvas.removeEventListener('contextmenu', preventDefault);
+        if (viewer && viewer.scene && viewer.scene.canvas) {
+          viewer.scene.canvas.removeEventListener('contextmenu', preventDefault)
         }
-    }
+      }
     }, [isInsideView, viewer])
 
     // Selection position - directly on the wall (no offset)
