@@ -97,6 +97,7 @@ function App() {
   } | null>(initialData.camera)
   const [externalMode, setExternalMode] = useState(initialData.mode)
   const [copyFeedback, setCopyFeedback] = useState(false)
+  const [minimized, setMinimized] = useState(false)
 
   const handleCopyLink = () => {
     const url = window.location.href
@@ -289,150 +290,176 @@ function App() {
         showSunPath={showSunPath}
       />
 
-      <div className="ui-overlay">
-        <h3>Controls</h3>
-        <div>
-          Mode: <strong>{mode}</strong>
-        </div>
-
-        <div style={{ marginTop: 10 }}>
+      <div className={`ui-overlay ${minimized ? 'minimized' : ''}`}>
+        <div className="overlay-header">
+          <h3>Controls</h3>
           <button
-            onClick={() => setMode('navigating')}
-            disabled={mode === 'viewing'}
-            className={mode === 'navigating' ? 'active' : ''}
+            onClick={() => setMinimized(!minimized)}
+            className="minimize-btn"
+            aria-label={minimized ? 'Expand controls' : 'Minimize controls'}
           >
-            Navigate
-          </button>
-          <button
-            onClick={() => setMode('selecting')}
-            style={{ marginLeft: 5 }}
-            disabled={mode === 'viewing'}
-            className={mode === 'selecting' ? 'active' : ''}
-          >
-            Select Window
+            {minimized ? '+' : '−'}
           </button>
         </div>
 
-        {selection && mode !== 'viewing' && (
-          <div style={{ marginTop: 20, borderTop: '1px solid #555', paddingTop: 10 }}>
-            <h4>Window Properties</h4>
-            <label>Width: {selection.width.toFixed(1)}m</label>
-            <input
-              type="range"
-              min="0.5"
-              max="10"
-              step="0.1"
-              value={selection.width}
-              onChange={(e) => updateSize('width', parseFloat(e.target.value))}
-            />
+        {!minimized && (
+          <div className="overlay-content">
+            <div>
+              Mode: <strong>{mode}</strong>
+            </div>
 
-            <label>Height: {selection.height.toFixed(1)}m</label>
-            <input
-              type="range"
-              min="0.5"
-              max="10"
-              step="0.1"
-              value={selection.height}
-              onChange={(e) => updateSize('height', parseFloat(e.target.value))}
-            />
-
-            <button
-              style={{ marginTop: 10, width: '100%', background: '#4CAF50' }}
-              onClick={handleEnterView}
-            >
-              View From Window
-            </button>
-          </div>
-        )}
-
-        {mode === 'viewing' && (
-          <div style={{ marginTop: 20 }}>
-            <p>
-              WASD to Move
-              <br />
-              Drag to Look
-              <br />
-              Scroll for FOV
-              <br />
-              Middle Click to Reset FOV
-            </p>
-            <button onClick={handleExitView}>Exit View</button>
-            <button
-              onClick={() => setShowSunPath((v) => !v)}
-              style={{
-                width: '100%',
-                marginTop: 8,
-                background: showSunPath ? '#FF9800' : '#555',
-              }}
-            >
-              {showSunPath ? '☀ Hide Sun Path' : '☀ Show Sun Path'}
-            </button>
-            {showSunPath && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: '10px 12px',
-                  background: 'rgba(0,0,0,0.6)',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  lineHeight: '1.8',
-                }}
+            <div style={{ marginTop: 10 }}>
+              <button
+                onClick={() => setMode('navigating')}
+                disabled={mode === 'viewing'}
+                className={mode === 'navigating' ? 'active' : ''}
               >
-                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Legend</div>
-                <div>
-                  <span style={{ color: '#FFA500', fontWeight: 'bold' }}>━━</span> Solstice (6/21,
-                  12/21)
-                </div>
-                <div>
-                  <span style={{ color: '#FFD700' }}>━━</span> Date arcs
-                </div>
-                <div>
-                  <span style={{ color: '#fff' }}>━━</span> Hour cross-lines
-                </div>
-                <div>
-                  <span style={{ color: '#FFB6C1' }}>━━</span> DST hours
-                </div>
+                Navigate
+              </button>
+              <button
+                onClick={() => setMode('selecting')}
+                style={{ marginLeft: 5 }}
+                disabled={mode === 'viewing'}
+                className={mode === 'selecting' ? 'active' : ''}
+              >
+                Select Window
+              </button>
+            </div>
+
+            {selection && mode !== 'viewing' && (
+              <div style={{ marginTop: 20, borderTop: '1px solid #555', paddingTop: 10 }}>
+                <h4>Window Properties</h4>
+                <label>Width: {selection.width.toFixed(1)}m</label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="10"
+                  step="0.1"
+                  value={selection.width}
+                  onChange={(e) => updateSize('width', parseFloat(e.target.value))}
+                />
+
+                <label>Height: {selection.height.toFixed(1)}m</label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="10"
+                  step="0.1"
+                  value={selection.height}
+                  onChange={(e) => updateSize('height', parseFloat(e.target.value))}
+                />
+
+                <button
+                  style={{ marginTop: 10, width: '100%', background: '#4CAF50' }}
+                  onClick={handleEnterView}
+                >
+                  View From Window
+                </button>
               </div>
             )}
+
+            {mode === 'viewing' && (
+              <div style={{ marginTop: 20 }}>
+                <p>
+                  WASD to Move
+                  <br />
+                  Drag to Look
+                  <br />
+                  Scroll for FOV
+                  <br />
+                  Middle Click to Reset FOV
+                </p>
+                <button onClick={handleExitView}>Exit View</button>
+                <button
+                  onClick={() => setShowSunPath((v) => !v)}
+                  style={{
+                    width: '100%',
+                    marginTop: 8,
+                    background: showSunPath ? '#FF9800' : '#555',
+                  }}
+                >
+                  {showSunPath ? '☀ Hide Sun Path' : '☀ Show Sun Path'}
+                </button>
+                {showSunPath && (
+                  <>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: '10px 12px',
+                        background: 'rgba(0,0,0,0.6)',
+                        borderRadius: 6,
+                        fontSize: 13,
+                        lineHeight: '1.8',
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Legend</div>
+                      <div>
+                        <span style={{ color: '#FFA500', fontWeight: 'bold' }}>━━</span> Solstice
+                        (6/21, 12/21)
+                      </div>
+                      <div>
+                        <span style={{ color: '#FFD700' }}>━━</span> Date arcs
+                      </div>
+                      <div>
+                        <span style={{ color: '#fff' }}>━━</span> Hour cross-lines
+                      </div>
+                      <div>
+                        <span style={{ color: '#FFB6C1' }}>━━</span> DST hours
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        fontSize: '0.8em',
+                        opacity: 0.8,
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      Note: DST is localized to the timezone of the selected location.
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div
+              style={{
+                marginTop: 20,
+                fontSize: 12,
+                opacity: 0.7,
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'center',
+              }}
+            >
+              <a
+                href="https://github.com/wengh/window-view"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#fff' }}
+              >
+                GitHub
+              </a>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: '#fff',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: 'inherit',
+                  fontWeight: 'normal',
+                }}
+                title="Copy current URL to clipboard"
+              >
+                {copyFeedback ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
           </div>
         )}
-
-        <div
-          style={{
-            marginTop: 20,
-            fontSize: 12,
-            opacity: 0.7,
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-          }}
-        >
-          <a
-            href="https://github.com/wengh/window-view"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#fff' }}
-          >
-            GitHub
-          </a>
-          <span style={{ opacity: 0.5 }}>|</span>
-          <button
-            onClick={handleCopyLink}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: '#fff',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontSize: 'inherit',
-              fontWeight: 'normal',
-            }}
-            title="Copy current URL to clipboard"
-          >
-            {copyFeedback ? 'Copied!' : 'Copy Link'}
-          </button>
-        </div>
       </div>
     </div>
   )
