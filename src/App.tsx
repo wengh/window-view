@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { EarthViewer } from './components/EarthViewer'
 import './App.css'
 import type { WindowSelection } from './logic/WindowSelector'
-import { Cartesian3, Quaternion } from 'cesium'
+import { Cartesian3, Quaternion, Ion } from 'cesium'
 
 // Helper to parse hash state
 const parseHash = (hash: string) => {
@@ -63,20 +63,16 @@ const parseHash = (hash: string) => {
   }
 }
 
-function App() {
-  const [apiKey, setApiKey] = useState(() => {
-    return (
-      localStorage.getItem('google_maps_api_key') || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
-    )
-  })
+// Set Cesium Ion Token
+Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN || ''
 
+function App() {
   // Initial State from Hash
   // We use a lazy initializer to parse only once on mount, but we also subscribe to updates.
   const [initialData] = useState(() => parseHash(window.location.hash.substring(1)))
 
   const [selection, setSelection] = useState<WindowSelection | null>(initialData.selection)
   const [mode, setMode] = useState<'navigating' | 'selecting' | 'viewing'>(initialData.mode)
-  const [tempApiKey, setTempApiKey] = useState('')
   const [showSunPath, setShowSunPath] = useState(initialData.showSunPath)
 
   const [cameraState, setCameraState] = useState<{
@@ -202,11 +198,6 @@ function App() {
     }
   }, [selection, mode, cameraState, showSunPath])
 
-  const handleSetApiKey = () => {
-    localStorage.setItem('google_maps_api_key', tempApiKey)
-    setApiKey(tempApiKey)
-  }
-
   const handleSelection = (sel: WindowSelection) => {
     setSelection(sel)
     setMode('selecting')
@@ -236,95 +227,9 @@ function App() {
     }
   }
 
-  if (!apiKey) {
-    return (
-      <div className="api-key-modal">
-        <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'left' }}>
-          <h2 style={{ textAlign: 'center' }}>Google Maps API Key Required</h2>
-
-          <div style={{ fontSize: '0.9em', marginBottom: '15px', lineHeight: '1.4' }}>
-            <p>
-              To use this 3D Viewer, you need a Google Maps API Key with the{' '}
-              <strong>Map Tiles API</strong> enabled.
-            </p>
-            <ol style={{ paddingLeft: '25px', margin: '15px 0' }}>
-              <li>
-                Go to{' '}
-                <a
-                  href="https://console.cloud.google.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#646cff' }}
-                >
-                  Google Cloud Console
-                </a>
-                .
-              </li>
-              <li>Create a new Project.</li>
-              <li>
-                Enable the{' '}
-                <a
-                  href="https://console.cloud.google.com/apis/library/tile.googleapis.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#646cff' }}
-                >
-                  Map Tiles API
-                </a>{' '}
-                (required for 3D Tiles).
-              </li>
-              <li>
-                Go to <strong>APIs & Services</strong> → <strong>Credentials</strong> and create an{' '}
-                <strong>API Key</strong>.
-              </li>
-            </ol>
-            <p
-              style={{
-                color: '#ffcc00',
-                fontSize: '0.9em',
-                background: 'rgba(255, 200, 0, 0.1)',
-                padding: '8px',
-                borderRadius: '4px',
-              }}
-            >
-              ⚠️ <strong>Important:</strong> You must enable "Map Tiles API". "Maps JavaScript API"
-              is unrelated.
-            </p>
-          </div>
-
-          <p
-            style={{ color: '#aaa', fontSize: '0.8em', fontStyle: 'italic', marginBottom: '15px' }}
-          >
-            Privacy Note: Your API key is stored locally in your browser and is only sent to Google
-            Servers to fetch 3D tiles. It is never sent to any other server.
-          </p>
-
-          <input
-            value={tempApiKey}
-            onChange={(e) => setTempApiKey(e.target.value)}
-            placeholder="Enter API Key"
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginBottom: '10px',
-              boxSizing: 'border-box',
-            }}
-          />
-          <button
-            onClick={handleSetApiKey}
-            style={{ width: '100%', padding: '10px', fontWeight: 'bold' }}
-          >
-            Start
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="app-container">
       <EarthViewer
-        googleMapsApiKey={apiKey}
         onWindowSelected={handleSelection}
         onCameraChange={handleCameraChange}
         selectionMode={mode === 'selecting'}

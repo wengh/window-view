@@ -5,7 +5,6 @@ import {
   Color,
   Viewer as CesiumViewer,
   Math as CesiumMath,
-  createGooglePhotorealistic3DTileset,
   ScreenSpaceEventType,
   PerspectiveFrustum,
   Matrix3,
@@ -43,7 +42,6 @@ const getOrientationFromDirection = (position: Cartesian3, direction: Cartesian3
 }
 
 interface EarthViewerProps {
-  googleMapsApiKey: string
   onWindowSelected: (selection: WindowSelection) => void
   onCameraChange?: (cam: {
     x: number
@@ -80,7 +78,6 @@ interface EarthViewerProps {
 
 export const EarthViewer = React.memo<EarthViewerProps>(
   ({
-    googleMapsApiKey,
     onWindowSelected,
     onCameraChange,
     selectionMode,
@@ -128,16 +125,14 @@ export const EarthViewer = React.memo<EarthViewerProps>(
     useEffect(() => {
       const loadTiles = async () => {
         try {
-          const ts = await createGooglePhotorealistic3DTileset({ key: googleMapsApiKey })
+          const ts = await Cesium.Cesium3DTileset.fromIonAssetId(2275207)
           setTileset(ts)
         } catch (error) {
           console.error('Failed to load 3D tiles', error)
         }
       }
-      if (googleMapsApiKey) {
-        loadTiles()
-      }
-    }, [googleMapsApiKey])
+      loadTiles()
+    }, [])
 
     // Manage Clipping Plane for Inside View to prevent building occlusion/culling
     useEffect(() => {

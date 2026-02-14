@@ -5,8 +5,6 @@
 Apartment hunting? Curious about a listing's natural light or skyline view? Window View lets you click on any building on a 3D globe, pick a window, and step inside a virtual room to see exactly what you'd see looking out — all from your browser.
 
 > **Try it now:** [wengh.github.io/window-view](https://wengh.github.io/window-view)
->
-> You'll need a free Google Maps API key ([instructions below](#getting-a-google-maps-api-key)).
 
 ---
 
@@ -99,18 +97,14 @@ Everything about your current view — the window you selected, your camera angl
 
 ---
 
-## Getting a Google Maps API Key
+## Getting a Cesium Ion Token
 
-Window View uses Google's Photorealistic 3D Tiles to render the world. You'll need a free API key to get started.
+Window View uses Cesium Ion to stream 3D tiles. If you are running this locally, you will need a free Cesium Ion account and access token.
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. **Create a new project** (or select an existing one).
-3. **Enable the Map Tiles API**
-   - Go to [Map Tiles API](https://console.cloud.google.com/apis/library/tile.googleapis.com) and click **"Enable"**.
-   - > ⚠️ You need the **"Map Tiles API"**, not the "Maps JavaScript API".
-4. **Create an API Key**
-   - Go to **APIs & Services → Credentials** → **"+ Create Credentials"** → **"API Key"**.
-5. **Enter your key** when prompted by the app. It's stored locally in your browser and never sent to any third-party server.
+1.  Sign up for a free account at [cesium.com/ion](https://ion.cesium.com/).
+2.  Go to the **Access Tokens** tab.
+3.  Create a new token (or use the default one).
+4.  Make sure the token has access to the [**Google Photorealistic 3D Tiles**](https://ion.cesium.com/assetdepot/2275207) asset. This should be granted by default.
 
 ---
 
@@ -132,5 +126,5 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for de
 Then open `http://localhost:5173`. You can optionally create a `.env` file with your API key so you don't have to enter it each time:
 
 ```
-VITE_GOOGLE_MAPS_API_KEY=your_key_here
+VITE_CESIUM_ION_TOKEN=your_token_here
 ```
