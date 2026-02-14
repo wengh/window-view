@@ -376,10 +376,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(
 
         const frustum = viewer.camera.frustum as PerspectiveFrustum
         if (frustum.fov) {
-          frustum.fov =
-            initialOutsideCamera?.fov && !isNaN(initialOutsideCamera.fov)
-              ? initialOutsideCamera.fov
-              : CesiumMath.toRadians(60)
+          frustum.fov = CesiumMath.toRadians(60)
         }
         if (frustum.near !== undefined) frustum.near = 1.0 // Restore default near plane to prevent frustum crashes
 
