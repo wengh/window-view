@@ -562,6 +562,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
       timeline={false}
       animation={false}
       baseLayerPicker={false}
+      sceneModePicker={false}
       requestRenderMode={false}
       maximumRenderTimeChange={Infinity}
     >
