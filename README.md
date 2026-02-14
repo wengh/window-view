@@ -22,7 +22,7 @@ NYC:
   https://wengh.github.io/window-view/#win=1333828.147,-4654719.573,4137757.221,0.554,0.636,0.537,-0.311,-0.367,-0.877,-0.011,3.500,2.200&mode=navigating&cam=1333871.887,-4654709.297,4137881.935,3.482,-0.659,0.000
 
   From this app:
-  <img width="3740" height="2046" alt="image" src="https://github.com/user-attachments/assets/d5404149-8cde-4a53-8352-204cd732cc3a" />
+  <img width="2504" height="2055" alt="image" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" />
 
   IRL:
   <img width="2014" height="1647" alt="image" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" />
@@ -44,7 +44,7 @@ Waterloo:
   https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.916,-4573192.487,4365933.415,5.281,-0.038,6.283
 
   From this app:
-  <img width="3743" height="2057" alt="image" src="https://github.com/user-attachments/assets/6f1e1a44-0fed-4e43-a1f3-3c2c8863dfc4" />
+  <img width="3744" height="2063" alt="image" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
 
 ## Controls
 
