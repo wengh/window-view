@@ -67,8 +67,8 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 | Action      | Control                                                   |
 | ----------- | --------------------------------------------------------- |
 | Pan view    | Left click + drag                                         |
-| Zoom view   | Right click + drag, or<br>Mouse wheel scroll              |
-| Rotate view | Middle click + drag, or<br>CTRL + Left/Right click + drag |
+| Zoom view   | Mouse wheel scroll                                        |
+| Rotate view | Right click + drag                                        |
 
 #### Selecting a Window
 
