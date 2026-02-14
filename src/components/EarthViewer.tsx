@@ -34,8 +34,16 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
   const fpControllerRef = useRef<FPController | null>(null);
   const draggingRef = useRef(false);
   const lastCameraUpdateRef = useRef(0);
-  const outsideRestoredRef = useRef(false); // Tracks if we restored outside camera
-  const insideRestoredRef = useRef(false);  // Tracks if we restored inside camera from URL
+  const lastAppliedOutsideCamRef = useRef<any>(null);
+  const lastAppliedInsideCamRef = useRef<any>(null);
+
+
+  const isCloseTo = (target: {x:number, y:number, z:number, h:number, p:number, r:number, fov?:number}, current: any) => {
+       const pos = current.position;
+       const dist = Cartesian3.distance(new Cartesian3(target.x, target.y, target.z), pos);
+       const angDist = Math.abs(target.h - current.heading) + Math.abs(target.p - current.pitch) + Math.abs(target.r - current.roll);
+       return dist < 2.0 && angDist < 0.1;
+  };
 
   const viewerCallback = useCallback((ref: any) => {
       if (ref && ref.cesiumElement) {
@@ -96,29 +104,45 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
 
   useEffect(() => {
     if (viewer && tileset) {
-        viewer.scene.primitives.add(tileset);
+        if (!viewer.scene.primitives.contains(tileset)) {
+            viewer.scene.primitives.add(tileset);
+        }
 
         // CRITICAL: Prevent skybox from disappearing
         viewer.scene.globe.showGroundAtmosphere = false; // Disable ground atmosphere which can hide sky
         viewer.scene.globe.enableLighting = false; // Disable lighting that might cause dark sky
-
-        if (viewer.camera.positionCartographic.height > 10000000 && !initialOutsideCamera && !startInsideCamera) {
-             viewer.camera.flyTo({
-                destination: Cartesian3.fromDegrees(-74.0060, 40.7128, 500),
-                orientation: {
-                    heading: CesiumMath.toRadians(0),
-                    pitch: CesiumMath.toRadians(-45),
-                    roll: 0
-                }
-            });
-        }
     }
     return () => {
         if (viewer && tileset) {
-             viewer.scene.primitives.remove(tileset);
+             // We must NOT destroy the tileset here if we want to reuse it.
+             // However, 'remove' destroys by default.
+             // We can check if it is destroyed?
+             if (viewer.scene.primitives.contains(tileset)) {
+                 viewer.scene.primitives.remove(tileset);
+                 // Wait, remove() destroys it.
+                 // We should probably rely on the fact that 'tileset' state is stable.
+                 // If tileset changes, the old one is destroyed. That's fine.
+                 // But if 'viewer' changes, we remove it.
+                 // If we remove 'initialOutsideCamera' from deps, this effect only runs when tileset changes.
+             }
         }
     }
-  }, [tileset, viewer, initialOutsideCamera, startInsideCamera]);
+  }, [tileset, viewer]);
+
+  useEffect(() => {
+      if (viewer && !initialOutsideCamera && !startInsideCamera) {
+           if (viewer.camera.positionCartographic.height > 10000000) {
+              viewer.camera.flyTo({
+                 destination: Cartesian3.fromDegrees(-74.0060, 40.7128, 500),
+                 orientation: {
+                     heading: CesiumMath.toRadians(0),
+                     pitch: CesiumMath.toRadians(-45),
+                     roll: 0
+                 }
+             });
+           }
+      }
+  }, [viewer, initialOutsideCamera, startInsideCamera]);
 
   const handleLeftClick = (movement: any) => {
     if (!selectionMode || !viewer || isInsideView) return;
@@ -219,23 +243,7 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
           let orientation: any;
 
 
-          if (startInsideCamera && !insideRestoredRef.current) {
-              console.log("Restoring Initial Camera (Inside)", startInsideCamera);
-              // Instant restore
-              viewer.camera.setView({
-                  destination: new Cartesian3(startInsideCamera.x, startInsideCamera.y, startInsideCamera.z),
-                  orientation: {
-                      heading: startInsideCamera.h,
-                      pitch: startInsideCamera.p,
-                      roll: startInsideCamera.r
-                  }
-              });
-              // Restore FOV
-              const frustum = viewer.camera.frustum as PerspectiveFrustum;
-              if (frustum.fov) frustum.fov = startInsideCamera.fov ?? CesiumMath.toRadians(60);
-
-              insideRestoredRef.current = true;
-          } else {
+          if (!startInsideCamera) {
               console.log("Entering Window View (Standard)");
               const { center, normal, height } = viewWindow;
               const offset = 2.5;
@@ -300,20 +308,47 @@ export const EarthViewer = React.memo<EarthViewerProps>(({
   }, [isInsideView, viewWindow, viewer, initialOutsideCamera, startInsideCamera]);
 
   // Restore Camera logic for OUTSIDE mode
+  // Effect to apply Outside Camera from prop
   useEffect(() => {
-      if (viewer && initialOutsideCamera && !isInsideView && !outsideRestoredRef.current) {
-          console.log("Restoring Initial Camera (Outside)...");
-          viewer.camera.setView({
-              destination: new Cartesian3(initialOutsideCamera.x, initialOutsideCamera.y, initialOutsideCamera.z),
-              orientation: {
-                  heading: initialOutsideCamera.h,
-                  pitch: initialOutsideCamera.p,
-                  roll: initialOutsideCamera.r
-              }
-          });
-          outsideRestoredRef.current = true;
+      if (viewer && initialOutsideCamera && !isInsideView) {
+          if (lastAppliedOutsideCamRef.current !== initialOutsideCamera) {
+               if (!isCloseTo(initialOutsideCamera, viewer.camera)) {
+                   console.log("Restoring Initial Camera (Outside) from prop");
+                   viewer.camera.setView({
+                       destination: new Cartesian3(initialOutsideCamera.x, initialOutsideCamera.y, initialOutsideCamera.z),
+                       orientation: {
+                           heading: initialOutsideCamera.h,
+                           pitch: initialOutsideCamera.p,
+                           roll: initialOutsideCamera.r
+                       }
+                   });
+               }
+               lastAppliedOutsideCamRef.current = initialOutsideCamera;
+          }
       }
   }, [viewer, initialOutsideCamera, isInsideView]);
+
+  // Effect to apply Inside Camera from prop
+  useEffect(() => {
+      if (viewer && startInsideCamera && isInsideView) {
+           if (lastAppliedInsideCamRef.current !== startInsideCamera) {
+               if (!isCloseTo(startInsideCamera, viewer.camera)) {
+                  console.log("Restoring Inside Camera from prop");
+                  viewer.camera.setView({
+                      destination: new Cartesian3(startInsideCamera.x, startInsideCamera.y, startInsideCamera.z),
+                      orientation: {
+                          heading: startInsideCamera.h,
+                          pitch: startInsideCamera.p,
+                          roll: startInsideCamera.r
+                      }
+                  });
+                   const frustum = viewer.camera.frustum as PerspectiveFrustum;
+                   if (frustum.fov) frustum.fov = startInsideCamera.fov ?? CesiumMath.toRadians(60);
+               }
+               lastAppliedInsideCamRef.current = startInsideCamera;
+           }
+      }
+  }, [viewer, startInsideCamera, isInsideView]);
 
   // Mouse Look using Cesium's ScreenSpaceEventHandler
   useEffect(() => {

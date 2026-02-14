@@ -4,73 +4,97 @@ import './App.css';
 import type { WindowSelection } from './logic/WindowSelector';
 import { Cartesian3, Quaternion } from 'cesium';
 
+// Helper to parse hash state
+const parseHash = (hash: string) => {
+    if (!hash) return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
+
+    try {
+        const params = new URLSearchParams(hash);
+        const winData = params.get('win');
+        const modeData = params.get('mode');
+        const camData = params.get('cam');
+        const spData = params.get('sp');
+
+        let selection: WindowSelection | null = null;
+        if (winData) {
+            const [x,y,z, nx,ny,nz, rx,ry,rz,rw, w,h] = winData.split(',').map(parseFloat);
+            selection = {
+                center: new Cartesian3(x,y,z),
+                normal: new Cartesian3(nx,ny,nz),
+                rotation: new Quaternion(rx,ry,rz,rw),
+                width: w,
+                height: h
+            };
+        }
+
+        let camera: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null = null;
+        if (camData) {
+            const parts = camData.split(',').map(parseFloat);
+            camera = { x:parts[0], y:parts[1], z:parts[2], h:parts[3], p:parts[4], r:parts[5], fov:parts[6] };
+        }
+
+        let mode: 'navigating' | 'selecting' | 'viewing' = 'navigating';
+        if (modeData === 'viewing') mode = 'viewing';
+        else if (modeData === 'selecting') mode = 'selecting';
+
+        const showSunPath = spData === '1';
+
+        return { selection, mode, camera, showSunPath };
+    } catch (e) {
+        console.error("Failed to parse hash", e);
+        return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
+    }
+};
+
 function App() {
   const [apiKey, setApiKey] = useState(() => {
       return localStorage.getItem('google_maps_api_key') || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   });
 
-  // Parse URL hash once on initial load
-  const initialState = useMemo(() => {
-      const hash = window.location.hash.substring(1);
-      if (!hash) return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
+  // Initial State from Hash
+  // We use a lazy initializer to parse only once on mount, but we also subscribe to updates.
+  const [initialData] = useState(() => parseHash(window.location.hash.substring(1)));
 
-      try {
-          const params = new URLSearchParams(hash);
-          const winData = params.get('win');
-          const modeData = params.get('mode');
-          const camData = params.get('cam');
-
-          let selection: WindowSelection | null = null;
-          if (winData) {
-              const [x,y,z, nx,ny,nz, rx,ry,rz,rw, w,h] = winData.split(',').map(parseFloat);
-              selection = {
-                  center: new Cartesian3(x,y,z),
-                  normal: new Cartesian3(nx,ny,nz),
-                  rotation: new Quaternion(rx,ry,rz,rw),
-                  width: w,
-                  height: h
-              };
-          }
-
-          let camera: { x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null = null;
-          if (camData) {
-              const parts = camData.split(',').map(parseFloat);
-              camera = { x:parts[0], y:parts[1], z:parts[2], h:parts[3], p:parts[4], r:parts[5], fov:parts[6] };
-          }
-
-          let mode: 'navigating' | 'selecting' | 'viewing' = 'navigating';
-          if (modeData === 'viewing') mode = 'viewing';
-          else if (modeData === 'selecting') mode = 'selecting';
-
-          const showSP = params.get('sp') === '1';
-
-          return { selection, mode, camera, showSunPath: showSP };
-      } catch (e) {
-          console.error("Failed to parse hash", e);
-          return { selection: null, mode: 'navigating' as const, camera: null, showSunPath: false };
-      }
-  }, []);
-
-  const [selection, setSelection] = useState<WindowSelection | null>(initialState.selection);
-  const [mode, setMode] = useState<'navigating' | 'selecting' | 'viewing'>(initialState.mode);
+  const [selection, setSelection] = useState<WindowSelection | null>(initialData.selection);
+  const [mode, setMode] = useState<'navigating' | 'selecting' | 'viewing'>(initialData.mode);
   const [tempApiKey, setTempApiKey] = useState('');
-  const [showSunPath, setShowSunPath] = useState(initialState.showSunPath);
+  const [showSunPath, setShowSunPath] = useState(initialData.showSunPath);
 
-  const [cameraState, setCameraState] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null>(initialState.camera);
+  const [cameraState, setCameraState] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null>(initialData.camera);
 
-  // Derived initial cameras for restoration logic
-  const initialOutsideCamera = useMemo(() =>
-    initialState.mode === 'navigating' ? initialState.camera : null
-  , [initialState]);
+  // External Camera is used to force EarthViewer to update position when it changes from outside (Hash)
+  const [externalCamera, setExternalCamera] = useState<{ x:number, y:number, z:number, h:number, p:number, r:number, fov?:number } | null>(initialData.camera);
+  const [externalMode, setExternalMode] = useState(initialData.mode);
 
-  const startInsideCamera = useMemo(() =>
-    initialState.mode === 'viewing' ? initialState.camera : null
-  , [initialState]);
+  // Listen for Hash Changes (User Paste / Back Button)
+  useEffect(() => {
+      const handleHashChange = () => {
+          // If the hash matches what we just wrote, ignore it (optional, but good practice if using lastHashRef)
+          // But strict equality of strings is usually enough.
 
+          console.log("Hash Change Detected", window.location.hash);
+          const newState = parseHash(window.location.hash.substring(1));
+
+          // Update Application State
+          setSelection(newState.selection);
+          setMode(newState.mode);
+          setExternalMode(newState.mode);
+          setShowSunPath(newState.showSunPath);
+
+          // Only update camera if present in hash
+          if (newState.camera) {
+              setCameraState(newState.camera);
+              setExternalCamera(newState.camera);
+          }
+      };
+
+      window.addEventListener('hashchange', handleHashChange);
+      return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const restoredRef = useRef(false);
 
-  // 2. Write State to URL (only after initial restore)
+  // Writer Effect (State -> Hash)
   useEffect(() => {
      // Skip the first run - let restore complete first
      if (!restoredRef.current) {
@@ -109,7 +133,7 @@ function App() {
      const newHash = params.join('&');
 
      if (window.location.hash !== '#' + newHash) {
-        window.location.replace('#' + newHash);
+         window.history.replaceState(null, '', '#' + newHash);
      }
   }, [selection, mode, cameraState, showSunPath]);
 
@@ -189,8 +213,10 @@ function App() {
         selectionMode={mode === 'selecting'}
         viewWindow={selection}
         isInsideView={mode === 'viewing'}
-        initialOutsideCamera={initialOutsideCamera}
-        startInsideCamera={startInsideCamera}
+        // Pass externalCamera as target for both modes
+        initialOutsideCamera={mode === 'navigating' ? externalCamera : null}
+        // ONLY use external camera for inside start if the external mode was explicitly viewing
+        startInsideCamera={mode === 'viewing' && externalMode === 'viewing' ? externalCamera : null}
         showSunPath={showSunPath}
       />
 
