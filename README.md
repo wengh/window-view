@@ -28,7 +28,7 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 | Window View | Real Life |
 |:-----------:|:---------:|
-| <img width="600" alt="Window View screenshot of 15 William St" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" /> | <img width="600" alt="Real photo from 15 William St" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" /> |
+| <img width="600" alt="Simulated view from 15 William Street, NYC, showing neighbor skyscrapers and clear blue sky" src="https://github.com/user-attachments/assets/a0aa1022-0f62-407a-86e0-d3a7c40fbd80" /> | <img width="600" alt="Real photo view from 15 William Street, NYC, illustrating the accuracy of the building assets and perspective" src="https://github.com/user-attachments/assets/95b40de2-e564-4c2b-96b8-1dd36fe886cf" /> |
 
 ### Chicago — Wolf Point East, unit [#4103](https://a.peek.us/viewer?token=EF_C6iJ1gK)
 
@@ -36,17 +36,17 @@ Listing photos can be misleading. "City views" might mean a sliver of sky betwee
 
 | Window View (+ sun path) | Real Life |
 |:-----------:|:---------:|
-| <img width="600" alt="Window View screenshot of Wolf Point East" src="https://github.com/user-attachments/assets/b7f44f8d-75f3-40aa-bf0f-eddb2e01474d" /> | <img width="600" alt="Real photo from Wolf Point East" src="https://github.com/user-attachments/assets/9ef28cbf-560a-4200-b72f-00c6863d8e25" /> |
+| <img width="600" alt="Simulated view from Wolf Point East, Chicago, with Sun Path overlay displaying hourly sun positions and seasonal arcs" src="https://github.com/user-attachments/assets/b7f44f8d-75f3-40aa-bf0f-eddb2e01474d" /> | <img width="600" alt="Real interior view from Wolf Point East, Chicago, overlooking the river and cityscape through a large window" src="https://github.com/user-attachments/assets/9ef28cbf-560a-4200-b72f-00c6863d8e25" /> |
 
 ### Waterloo — E5 Bridge
 
 [**→ Open in Window View**](https://wengh.github.io/window-view/#win=762001.692,-4573191.063,4365935.320,-0.708,0.423,0.566,0.337,-0.321,-0.863,0.195,10.000,2.500&mode=viewing&cam=762004.916,-4573192.487,4365933.415,5.281,-0.038,6.283)
 
-<img width="600" alt="Window View screenshot of E5 bridge" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
+<img width="600" alt="Simulated view from E5 bridge, Waterloo, depicting railway tracks and surrounding vegetation" src="https://github.com/user-attachments/assets/b867b544-f94c-4a0c-bd15-d0ceac34b064" />
 
 ### Sun path
 
-<img width="1230" height="2015" alt="image" src="https://github.com/user-attachments/assets/12c8d14d-b837-46d2-aea0-eb165fbf8c14" />
+<img width="1230" height="2015" alt="Detailed sun path overlay showing hourly analemmas (figure-8 loops) indicating the sun's position throughout the year, with date labels for solstices and equinoxes" src="https://github.com/user-attachments/assets/12c8d14d-b837-46d2-aea0-eb165fbf8c14" />
 
 ---
 
