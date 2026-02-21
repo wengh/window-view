@@ -97,7 +97,9 @@ Everything about your current view — the window you selected, your camera angl
 
 ---
 
-## Getting a Cesium Ion Token
+## Running Locally
+
+### Getting a Cesium Ion Token
 
 Window View uses Cesium Ion to stream 3D tiles. If you are running this locally, you will need a free Cesium Ion account and access token.
 
@@ -106,11 +108,13 @@ Window View uses Cesium Ion to stream 3D tiles. If you are running this locally,
 3.  Create a new token (or use the default one).
 4.  Make sure the token has access to the [**Google Photorealistic 3D Tiles**](https://ion.cesium.com/assetdepot/2275207) asset. This should be granted by default.
 
----
+Then create a `.env` file at project root with your API key:
 
-## Running Locally
+```
+VITE_CESIUM_ION_TOKEN=your_token_here
+```
 
-If you'd like to run your own copy:
+### Running the App
 
 ```bash
 git clone https://github.com/wengh/window-view.git
@@ -119,12 +123,4 @@ npm install
 npm run dev
 ```
 
-## Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
-Then open `http://localhost:5173`. You can optionally create a `.env` file with your API key so you don't have to enter it each time:
-
-```
-VITE_CESIUM_ION_TOKEN=your_token_here
-```
+Then open `http://localhost:5173`.
