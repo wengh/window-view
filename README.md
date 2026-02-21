@@ -99,6 +99,13 @@ Everything about your current view — the window you selected, your camera angl
 
 ## Running Locally
 
+### Cloning
+
+```bash
+git clone https://github.com/wengh/window-view.git
+cd window-view
+```
+
 ### Getting a Cesium Ion Token
 
 Window View uses Cesium Ion to stream 3D tiles. If you are running this locally, you will need a free Cesium Ion account and access token.
@@ -117,8 +124,6 @@ VITE_CESIUM_ION_TOKEN=your_token_here
 ### Running the App
 
 ```bash
-git clone https://github.com/wengh/window-view.git
-cd window-view
 npm install
 npm run dev
 ```
