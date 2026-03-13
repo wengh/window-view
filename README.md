@@ -6,6 +6,8 @@ Apartment hunting? Curious about a listing's natural light or skyline view? Wind
 
 > **Try it now:** [wengh.github.io/window-view](https://wengh.github.io/window-view)
 
+<a href="https://www.producthunt.com/products/window-view?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-window-view" target="_blank" rel="noopener noreferrer"><img alt="Window View - Step inside any building on Google Earth to see the view | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1097070&amp;theme=dark&amp;t=1773372527233"></a>
+
 ---
 
 ## Why This Exists
